@@ -39,7 +39,8 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 dify:
-  api-url: http://localhost
+  # 本地直连可用 localhost:80（经 Dify nginx）；容器内请用 http://dify-api:5001
+  api-url: ${DIFY_API_URL:http://localhost}
   api-key: ${DIFY_API_KEY:}
   timeout: 60000
 

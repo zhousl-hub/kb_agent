@@ -66,6 +66,12 @@ coverage/
 .nyc_output/
 *.lcov
 
+# ========== Dify 运行时数据 ==========
+code/dify/docker/volumes/
+code/dify/docker/.env
+code/dify/api/.env
+code/dify/web/.env
+
 # ========== 其他 ==========
 *.bak
 *.orig

@@ -201,5 +201,7 @@ volumes:
     driver: local
 
 networks:
+  # 固定网络名，供 Dify compose（docker-compose.kba.yml）以 external 方式接入
   kba-network:
+    name: kba-shared-network
     driver: bridge

@@ -1,0 +1,5 @@
+# 本地覆盖：为 plugin_daemon 分配更多内存，避免 uv 安装依赖时被 OOM kill
+services:
+  plugin_daemon:
+    mem_limit: 4096m
+    memswap_limit: 8192m
