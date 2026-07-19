@@ -1006,7 +1006,7 @@ flowchart LR
     SC --> SS --> DRET
       </div>
 
-      <p>企业侧保留文档元数据与生命周期，检索委托 Dify（或过渡期 WeKnora）。</p>
+      <p>企业侧保留文档元数据与生命周期，检索委托 Dify。</p>
 
       <div class="code-file">kba-knowledge/.../DocumentServiceImpl.java — 文档上传</div>
       <pre><code>public Map upload(Long knowledgeId, MultipartFile file) {
@@ -1023,7 +1023,7 @@ flowchart LR
     request.put("query", query);
     request.put("top_k", topK);
     request.put("dataset_id", knowledgeId.toString());
-    Map result = weknoraApiClient.retrieve(request);  // 调检索引擎
+    Map result = difyApiClient.retrieve(request);  // 调 Dify 检索引擎
     return extractSearchResults(result);              // 解析 records → content/score
 }</code></pre>
 
