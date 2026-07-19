@@ -1,0 +1,67 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+      discovery:
+        server-addr: ${NACOS_SERVER_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        group: ${NACOS_GROUP:DEFAULT_GROUP}
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # identity 在 Controller 上使用 /api/v1 前缀；其余服务使用 context-path=/api/v1，网关均完整转发
+        - id: identity-service
+          uri: lb://identity-service
+          predicates:
+            - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/roles/**
+        - id: knowledge-service
+          uri: lb://knowledge-service
+          predicates:
+            - Path=/api/v1/knowledge/**,/api/v1/documents/**,/api/v1/search/**,/api/v1/data-sources/**,/api/v1/sync-tasks/**,/api/v1/favorites/**,/api/v1/reports/**
+        - id: ai-application-service
+          uri: lb://ai-application-service
+          predicates:
+            - Path=/api/v1/apps/**,/api/v1/assistants/**,/api/v1/assistant/**,/api/v1/assistant-sessions/**,/api/v1/chat/**,/api/v1/models/**,/api/v1/model-providers/**,/api/v1/model-routers/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**,/api/v1/email/**,/api/v1/sms/**
+        - id: file-service
+          uri: lb://file-service
+          predicates:
+            - Path=/api/v1/files/**
+        - id: operations-service
+          uri: lb://operations-service
+          predicates:
+            - Path=/api/v1/monitor/**,/api/v1/audit/**,/api/v1/config/**
+
+sa-token:
+  token-name: Authorization
+  token-prefix: Bearer
+  timeout: 86400
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-log: false
+
+logging:
+  level:
+    com.kba.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG

@@ -1,0 +1,270 @@
+# KBA 微服务配置 (与 compose.dev.yml 配合使用)
+# 使用方法: docker-compose -f docker/compose.dev.yml -f docker/compose.services.yml up -d
+
+services:
+  # ==================== 后端微服务 ====================
+
+  # API Gateway
+  gateway:
+    build:
+      context: ../code/backend/kba-gateway
+      dockerfile: Dockerfile
+    container_name: kba-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      nacos:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kba-network
+
+  # Identity Service
+  identity-service:
+    build:
+      context: ../code/backend/kba-identity
+      dockerfile: Dockerfile
+    container_name: kba-identity
+    restart: unless-stopped
+    ports:
+      - "8101:8101"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/kba_identity?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kba-network
+
+  # Knowledge Service
+  knowledge-service:
+    build:
+      context: ../code/backend/kba-knowledge
+      dockerfile: Dockerfile
+    container_name: kba-knowledge
+    restart: unless-stopped
+    ports:
+      - "8102:8102"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/kba_knowledge?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      DIFY_API_URL: ${DIFY_API_URL:-http://host.docker.internal:5001}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kba-network
+
+  # AI Application Service
+  ai-application-service:
+    build:
+      context: ../code/backend/kba-ai-application
+      dockerfile: Dockerfile
+    container_name: kba-ai-application
+    restart: unless-stopped
+    ports:
+      - "8103:8103"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/kba_ai?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      DIFY_API_URL: ${DIFY_API_URL:-http://host.docker.internal:5001}
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kba-network
+
+  # Operations Service
+  operations-service:
+    build:
+      context: ../code/backend/kba-operations
+      dockerfile: Dockerfile
+    container_name: kba-operations
+    restart: unless-stopped
+    ports:
+      - "8104:8104"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/kba_ops?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kba-network
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ../code/backend/kba-notification
+      dockerfile: Dockerfile
+    container_name: kba-notification
+    restart: unless-stopped
+    ports:
+      - "8105:8105"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/kba_notification?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - kba-network
+
+  # File Service
+  file-service:
+    build:
+      context: ../code/backend/kba-file
+      dockerfile: Dockerfile
+    container_name: kba-file
+    restart: unless-stopped
+    ports:
+      - "8106:8106"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_CLOUD_NACOS_DISCOVERY_SERVER_ADDR: nacos:8848
+      SPRING_CLOUD_NACOS_CONFIG_SERVER_ADDR: nacos:8848
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/kba_file?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - kba-network
+
+  # ==================== 前端应用 ====================
+
+  # Portal Web (入口页)
+  portal-web:
+    build:
+      context: ../code/frontend/portal-web
+      dockerfile: Dockerfile
+      target: development
+    container_name: kba-portal-web
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:8080
+    volumes:
+      - ../code/frontend/portal-web:/app
+      - /app/node_modules
+    networks:
+      - kba-network
+
+  # Admin Web (管理端)
+  admin-web:
+    build:
+      context: ../code/frontend/admin-web
+      dockerfile: Dockerfile
+      target: development
+    container_name: kba-admin-web
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:8080
+    volumes:
+      - ../code/frontend/admin-web:/app
+      - /app/node_modules
+    depends_on:
+      - gateway
+    networks:
+      - kba-network
+
+  # Client Web (用户端)
+  client-web:
+    build:
+      context: ../code/frontend/client-web
+      dockerfile: Dockerfile
+      target: development
+    container_name: kba-client-web
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      VITE_API_BASE_URL: http://localhost:8080
+    volumes:
+      - ../code/frontend/client-web:/app
+      - /app/node_modules
+    depends_on:
+      - gateway
+    networks:
+      - kba-network

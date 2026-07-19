@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KBA · 基于 Dify 的企业级 RAG &amp; Agent 项目介绍</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --surface: #151c28;
+      --surface2: #1c2636;
+      --border: #2a3648;
+      --text: #e8eef6;
+      --muted: #8fa3bd;
+      --accent: #155eef;
+      --accent2: #22c55e;
+      --accent3: #f59e0b;
+      --code-bg: #0a0e13;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+    }
+    header {
+      padding: 2.5rem 2rem 2rem;
+      background: linear-gradient(135deg, #121a28 0%, #0b0f14 60%, #0d1520 100%);
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 { margin: 0 0 0.6rem; font-size: 1.85rem; font-weight: 700; letter-spacing: -0.02em; }
+    header .subtitle { color: var(--muted); max-width: 820px; margin: 0 0 1rem; font-size: 1.05rem; }
+    header .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: rgba(21, 94, 239, 0.12);
+      color: #7aa2ff;
+    }
+    .tag.green { background: rgba(34, 197, 94, 0.12); color: #6ee7a0; }
+    .tag.amber { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+    nav.toc {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(11, 15, 20, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 2rem;
+      display: flex; flex-wrap: wrap; gap: 0.45rem 1.1rem;
+    }
+    nav.toc a { color: var(--muted); text-decoration: none; font-size: 0.88rem; }
+    nav.toc a:hover { color: var(--text); }
+    main { max-width: 1080px; margin: 0 auto; padding: 2rem; }
+    section { margin-bottom: 3.2rem; scroll-margin-top: 4rem; }
+    h2 {
+      font-size: 1.45rem; margin: 2rem 0 1rem;
+      padding-bottom: 0.45rem;
+      border-bottom: 2px solid var(--accent);
+    }
+    h3 { font-size: 1.12rem; margin: 1.4rem 0 0.65rem; color: #c8d6ea; }
+    h4 { font-size: 0.98rem; margin: 1rem 0 0.4rem; color: var(--muted); }
+    p { margin: 0.65rem 0; }
+    ul, ol { margin: 0.45rem 0; padding-left: 1.45rem; }
+    li { margin: 0.3rem 0; }
+    table {
+      width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem;
+    }
+    th, td { border: 1px solid var(--border); padding: 0.55rem 0.8rem; text-align: left; vertical-align: top; }
+    th { background: var(--surface2); color: #c8d6ea; }
+    tr:nth-child(even) { background: rgba(21, 28, 40, 0.55); }
+    .mermaid {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.2rem; margin: 1.1rem 0; overflow-x: auto;
+    }
+    pre {
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem 1.15rem; overflow-x: auto;
+      font-size: 0.8rem; line-height: 1.55;
+    }
+    code { font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: 0.87em; }
+    pre code { color: #c9d4e3; }
+    .path { color: #7ee787; }
+    .code-file {
+      font-size: 0.78rem; color: #7ee787; margin: 1.1rem 0 0.35rem;
+      font-family: "Cascadia Code", Consolas, monospace;
+    }
+    .code-file::before { content: "// "; color: var(--muted); }
+    .flow-step {
+      border-left: 3px solid var(--accent);
+      padding: 0.5rem 0 0.5rem 1rem;
+      margin: 0.75rem 0;
+    }
+    .flow-step strong { color: #c8d6ea; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1.15rem 1.25rem; margin: 1rem 0;
+    }
+    .card.highlight { border-color: rgba(21, 94, 239, 0.45); background: linear-gradient(135deg, rgba(21,94,239,0.08), rgba(21,28,40,0.9)); }
+    .card.memory { border-left: 4px solid var(--accent2); }
+    .resume-box {
+      background: var(--surface2); border: 1px dashed rgba(34, 197, 94, 0.4);
+      border-radius: 10px; padding: 1.1rem 1.25rem; margin: 1rem 0;
+    }
+    .resume-box h4 { color: #6ee7a0; margin-top: 0; }
+    .resume-box ul { margin-bottom: 0; }
+    .badge {
+      display: inline-block; padding: 0.12rem 0.45rem; border-radius: 4px;
+      font-size: 0.72rem; font-weight: 700; margin-right: 0.35rem;
+    }
+    .badge-rag { background: rgba(21, 94, 239, 0.25); color: #7aa2ff; }
+    .badge-agent { background: rgba(168, 85, 247, 0.25); color: #c4b5fd; }
+    .badge-java { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 768px) {
+      .grid2 { grid-template-columns: 1fr; }
+      main { padding: 1rem; }
+      header { padding: 1.5rem 1rem; }
+    }
+    footer {
+      text-align: center; padding: 2rem; color: var(--muted);
+      font-size: 0.84rem; border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>KBA · 基于 Dify 的企业级 RAG &amp; Agent 平台</h1>
+    <p class="subtitle">
+      简历向项目说明文档。核心记忆模型：<strong>KBA 做企业门户与治理，Dify 做 RAG 引擎与 Agent 编排</strong>。
+      知识入库、向量检索、重排引用、对话生成、工具调用均在 Dify 内闭环；Java 微服务负责统一认证、权限审计、会话持久化与业务门户。
+    </p>
+    <div class="tags">
+      <span class="tag">RAG</span>
+      <span class="tag">Agent</span>
+      <span class="tag green">Spring Boot 微服务</span>
+      <span class="tag green">Vue 3</span>
+      <span class="tag amber">Dify</span>
+      <span class="tag">Keycloak SSO</span>
+      <span class="tag">Qdrant</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#overview">项目概述</a>
+    <a href="#memory">记忆口诀</a>
+    <a href="#stack">技术栈</a>
+    <a href="#features">核心功能</a>
+    <a href="#resume">简历话术</a>
+    <a href="#arch">整体架构</a>
+    <a href="#rag">Dify RAG</a>
+    <a href="#rag-detail">RAG代码详解</a>
+    <a href="#agent">Dify Agent</a>
+    <a href="#kba">KBA 集成</a>
+    <a href="#flows">业务流程</a>
+    <a href="#walkthrough">代码走读</a>
+    <a href="#auth">权限系统</a>
+    <a href="#code">代码速查</a>
+    <a href="#qa">面试记忆</a>
+  </nav>
+
+  <main>
+
+    <!-- ========== 1. 项目概述 ========== -->
+    <section id="overview">
+      <h2>一、项目概述</h2>
+      <div class="card highlight">
+        <p><strong>KBA（Tongyuan Knowledge Base System）</strong> 是一套面向企业的 LLM 知识库与智能助手平台，采用 <strong>RAG（检索增强生成）</strong> 范式，支持 Chatbot、Workflow、Agent 三类 AI 应用形态。</p>
+        <p>架构上采用<strong>「企业中台 + AI 引擎」</strong>分层：外层 KBA（Java 微服务 + Vue 门户）提供多租户、SSO、审计、知识空间管理；内层 <strong>Dify</strong> 作为统一的 RAG &amp; Agent 引擎，负责文档索引、混合检索、重排序、LLM 推理与工具编排。</p>
+      </div>
+
+      <h3>1.1 项目定位（对外怎么说）</h3>
+      <table>
+        <thead><tr><th>维度</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>业务价值</td><td>统一企业知识资产，一套知识库服务客服、研发、运营等多个 AI 助手应用</td></tr>
+          <tr><td>技术亮点</td><td>Dify 内置 RAG 全链路 + Agent ReACT 工具调用 + Java 微服务企业治理</td></tr>
+          <tr><td>交付形态</td><td>管理端（知识接入/应用配置/治理）+ 用户端（检索/对话/报告编辑）</td></tr>
+          <tr><td>部署方式</td><td>Docker Compose：MySQL / Redis / Nacos / MinIO / Keycloak / Qdrant + Dify + KBA 微服务</td></tr>
+        </tbody>
+      </table>
+
+      <h3>1.2 简化后的职责边界（面试必背）</h3>
+      <div class="grid2">
+        <div class="card">
+          <span class="badge badge-rag">Dify 负责</span>
+          <ul>
+            <li>知识库 Dataset 管理与文档索引（Celery 异步）</li>
+            <li>向量 / 全文 / 混合检索 + Rerank</li>
+            <li>Chatbot / Workflow / Agent 应用编排</li>
+            <li>多模型接入、Prompt、工具（Tool）调用</li>
+            <li>流式 SSE 对话输出与引用溯源</li>
+          </ul>
+        </div>
+        <div class="card">
+          <span class="badge badge-java">KBA 负责</span>
+          <ul>
+            <li>统一 API 网关与 Sa-Token / Keycloak 认证</li>
+            <li>企业知识空间、文档元数据、收藏与检索门户</li>
+            <li>AI 助手 / 会话 / 消息持久化</li>
+            <li>代理调用 Dify API（流式对话转发）</li>
+            <li>审计日志、运营监控、系统配置</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== 2. 记忆口诀 ========== -->
+    <section id="memory">
+      <h2>二、三层记忆口诀（尽量简化）</h2>
+      <div class="card memory">
+        <p style="font-size:1.15rem;margin:0 0 0.5rem"><strong>「门户治理 · Dify 智能 · 基建支撑」</strong></p>
+        <ol>
+          <li><strong>门户治理层</strong>：Gateway + Identity + Operations — 谁能进、能看什么、操作留痕</li>
+          <li><strong>Dify 智能层</strong>：Dataset 建库 → Retrieve 检索 → LLM/Agent 生成 — 所有 AI 能力在这里</li>
+          <li><strong>基建支撑层</strong>：MySQL 业务数据、Redis 缓存/队列、MinIO 文件、Qdrant 向量、Keycloak SSO</li>
+        </ol>
+      </div>
+
+      <div class="mermaid">
+flowchart TB
+    subgraph L1["① 门户治理层 KBA"]
+        GW[Gateway :8080]
+        ID[Identity 认证]
+        KN[Knowledge 知识管理]
+        AI[AI-Application 对话代理]
+        OP[Operations 审计监控]
+    end
+
+    subgraph L2["② Dify 智能层 — RAG & Agent 核心"]
+        DS[Dataset 知识库]
+        IDX[IndexingRunner 离线索引]
+        RET[DatasetRetrieval 在线检索]
+        APP[App: Chatbot / Workflow / Agent]
+    end
+
+    subgraph L3["③ 基建层"]
+        DB[(MySQL)]
+        RD[(Redis)]
+        S3[(MinIO)]
+        VDB[(Qdrant)]
+        KC[Keycloak]
+    end
+
+    GW --> ID & KN & AI & OP
+    KN -->|文档元数据 + 同步索引| DS
+    AI -->|chat-messages SSE| APP
+    APP --> RET --> VDB
+    DS --> IDX --> VDB
+    KN & AI & OP --> DB
+    APP --> RD
+    ID --> KC
+      </div>
+    </section>
+
+    <!-- ========== 3. 技术栈 ========== -->
+    <section id="stack">
+      <h2>三、技术栈</h2>
+      <table>
+        <thead><tr><th>层次</th><th>技术选型</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td>后端框架</td><td>Java 17 · Spring Boot 3.2 · Spring Cloud Gateway</td><td>8 个微服务模块，DDD 分层</td></tr>
+          <tr><td>ORM / 认证</td><td>MyBatis-Plus · Sa-Token · Keycloak OAuth2</td><td>持久化 + 网关鉴权 + SSO</td></tr>
+          <tr><td>前端</td><td>Vue 3.5 · TypeScript · Vite · Element Plus / Vant</td><td>管理端 + 用户端 + 门户</td></tr>
+          <tr><td><strong>AI 引擎</strong></td><td><strong>Dify（Flask API + Celery + Next.js 控制台）</strong></td><td><strong>RAG 索引检索 + Agent 编排 + 模型管理</strong></td></tr>
+          <tr><td>向量库</td><td>Qdrant</td><td>Embedding 向量存储（Dify 可插拔多种 VDB）</td></tr>
+          <tr><td>消息 / 缓存</td><td>Redis 7</td><td>会话缓存、Celery Broker、Sa-Token 会话</td></tr>
+          <tr><td>对象存储</td><td>MinIO</td><td>原始文档、Dify 上传文件</td></tr>
+          <tr><td>注册 / 配置</td><td>Nacos</td><td>服务发现与配置中心</td></tr>
+          <tr><td>流式通信</td><td>WebClient + SSE</td><td>KBA 代理 Dify 流式对话到前端</td></tr>
+        </tbody>
+      </table>
+
+      <h3>3.2 Dify RAG &amp; Agent 技术栈（读代码时的对照表）</h3>
+      <table>
+        <thead><tr><th>RAG 环节</th><th>技术</th><th>源码入口</th></tr></thead>
+        <tbody>
+          <tr><td>异步索引</td><td>Celery 5 + Redis</td><td><code>tasks/document_indexing_task.py</code></td></tr>
+          <tr><td>文档解析</td><td>unstructured · pypdfium2 · beautifulsoup4</td><td><code>core/rag/extractor/</code></td></tr>
+          <tr><td>切分</td><td>RecursiveCharacterTextSplitter · tiktoken</td><td><code>core/rag/splitter/</code></td></tr>
+          <tr><td>向量化</td><td>ModelManager + CacheEmbedding</td><td><code>core/rag/embedding/</code></td></tr>
+          <tr><td>向量库</td><td>Qdrant / Weaviate / Milvus 等</td><td><code>core/rag/datasource/vdb/</code></td></tr>
+          <tr><td>关键词</td><td>jieba</td><td><code>core/rag/datasource/keyword/</code></td></tr>
+          <tr><td>检索</td><td>ThreadPoolExecutor 混合检索</td><td><code>retrieval_service.py</code></td></tr>
+          <tr><td>重排</td><td>Rerank 模型 / Weighted Score</td><td><code>data_post_processor.py</code></td></tr>
+        </tbody>
+      </table>
+      <table>
+        <thead><tr><th>Agent 环节</th><th>技术</th><th>源码入口</th></tr></thead>
+        <tbody>
+          <tr><td>ReACT 推理</td><td>CotAgentRunner + CotAgentOutputParser</td><td><code>core/agent/cot_agent_runner.py</code></td></tr>
+          <tr><td>Function Call</td><td>FunctionCallAgentRunner + tool_calls</td><td><code>core/agent/fc_agent_runner.py</code></td></tr>
+          <tr><td>工具调度</td><td>ToolEngine · ToolManager</td><td><code>core/tools/tool_engine.py</code></td></tr>
+          <tr><td>知识库 Tool</td><td>DatasetRetrieverTool → DatasetRetrieval</td><td><code>core/tools/utils/dataset_retriever/</code></td></tr>
+          <tr><td>MCP 扩展</td><td>MCPTool + Plugin Daemon</td><td><code>core/tools/mcp_tool/</code></td></tr>
+          <tr><td>代码沙箱</td><td>dify-sandbox + SSRF Proxy</td><td>Docker <code>sandbox:8194</code></td></tr>
+          <tr><td>多轮记忆</td><td>TokenBufferMemory</td><td><code>core/memory/token_buffer_memory.py</code></td></tr>
+          <tr><td>LLM 接入</td><td>dify_graph.model_runtime · litellm</td><td><code>dify_graph/model_runtime/</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section id="features">
+      <h2>四、核心功能模块</h2>
+
+      <h3>4.1 知识管理（RAG 数据面）</h3>
+      <table>
+        <thead><tr><th>功能</th><th>KBA 侧</th><th>Dify 侧</th></tr></thead>
+        <tbody>
+          <tr><td>知识空间 / 知识库</td><td>Knowledge 实体、空间划分、权限</td><td>Dataset 创建与 tenant 隔离</td></tr>
+          <tr><td>文档上传</td><td>DocumentController 上传至 MinIO/本地，记录元数据</td><td>触发 document_indexing_task → IndexingRunner</td></tr>
+          <tr><td>文档解析切分</td><td>状态跟踪（pending → indexed）</td><td>ExtractProcessor + TextSplitter + IndexProcessor</td></tr>
+          <tr><td>语义检索</td><td>SearchService 提供检索 API、结果展示</td><td>RetrievalService 语义/全文/混合检索</td></tr>
+          <tr><td>收藏 / 数据源</td><td>Favorite、DataSource 连接器管理</td><td>Notion/Website 等 DatasourceType 抽取</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.2 AI 应用（RAG 消费面 + Agent）</h3>
+      <table>
+        <thead><tr><th>应用类型</th><th>场景</th><th>Dify 模式</th></tr></thead>
+        <tbody>
+          <tr><td>智能客服</td><td>FAQ + 工单知识问答，带引用</td><td>Chatbot + Dataset 绑定</td></tr>
+          <tr><td>文档摘要</td><td>长文档结构化摘要</td><td>Workflow 流水线</td></tr>
+          <tr><td>研发助手</td><td>技术文档检索 + 代码示例</td><td>Agent + 知识库 Tool + 网络搜索 Tool</td></tr>
+          <tr><td>运营 Copilot</td><td>SOP 查询 + 多步推理</td><td>Agent ReACT 迭代</td></tr>
+        </tbody>
+      </table>
+
+      <h3>4.3 企业治理（差异化能力）</h3>
+      <ul>
+        <li><strong>统一认证</strong>：Keycloak OIDC + Sa-Token 网关鉴权，组织/角色同步</li>
+        <li><strong>权限与审计</strong>：RBAC 菜单权限、Operations 审计日志、越权拦截</li>
+        <li><strong>多租户</strong>：tenant_id 贯穿 Knowledge / Assistant / Session</li>
+        <li><strong>运营监控</strong>：服务健康检查（Dify / 各微服务 UP 状态）、反馈闭环</li>
+        <li><strong>报告编辑</strong>：富文本 + 右侧知识检索插入 + 知识回写（设计能力）</li>
+      </ul>
+      <p>各功能与流程的<strong>核心代码走读</strong>见 <a href="#walkthrough" style="color:#7aa2ff">第十一章</a>（F1-F6）。</p>
+    </section>
+
+    <!-- ========== 5. 简历话术 ========== -->
+    <section id="resume">
+      <h2>五、简历话术（工作职责 &amp; 开发业绩）</h2>
+
+      <div class="resume-box">
+        <h4>项目描述（可直接粘贴）</h4>
+        <p>KBA 是基于 Dify 的企业级 RAG &amp; Agent 知识库平台。采用 Spring Cloud 微服务 + Vue 3 前后端分离架构，以 Dify 作为统一 AI 引擎实现文档索引、混合检索、重排序与 Agent 工具编排；KBA 层提供 SSO 单点登录、多租户知识空间、流式对话代理、审计监控等企业治理能力，支撑客服助手、研发助手等多场景 AI 应用。</p>
+      </div>
+
+      <div class="resume-box">
+        <h4>工作职责示例</h4>
+        <ul>
+          <li>负责 KBA 微服务架构设计与模块拆分（Gateway / Knowledge / AI-Application / Identity / Operations）</li>
+          <li>基于 Dify Dataset API 与 chat-messages API 实现知识库索引与流式对话集成（WebClient + SSE）</li>
+          <li>设计 RAG 检索链路：文档上传 → Celery 异步索引 → 混合检索 → Rerank → 上下文注入 LLM</li>
+          <li>实现 Agent 应用对接：Dify Agent 模式绑定知识库 Tool，支持 ReACT 多轮工具调用与引用溯源</li>
+          <li>搭建 Keycloak + Sa-Token 统一认证，Gateway 全局鉴权与 RBAC 权限控制</li>
+          <li>开发 Vue 3 管理端（知识接入/应用管理/治理）与用户端（检索/AI 对话/报告）</li>
+        </ul>
+      </div>
+
+      <div class="resume-box">
+        <h4>开发业绩 / 量化指标（按实际填写）</h4>
+        <ul>
+          <li>完成 8 个后端微服务 + 3 套前端（管理/用户/门户），API 经 Gateway 统一暴露</li>
+          <li>RAG 检索 P95 时延目标 &lt; 800ms（不含 LLM 生成），支持语义/全文/混合三种检索模式</li>
+          <li>对话接口支持 SSE 流式输出，会话与消息持久化，Dify conversation_id 双向同步</li>
+          <li>Docker Compose 一键部署全套基础设施 + Dify + 业务服务</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ========== 6. 整体架构 ========== -->
+    <section id="arch">
+      <h2>六、整体架构设计</h2>
+
+      <h3>6.1 微服务拓扑</h3>
+      <div class="mermaid">
+flowchart LR
+    subgraph Frontend["前端 Vue 3"]
+        AD[admin-web :3000]
+        CL[client-web :3001]
+        PT[portal-web :3002]
+    end
+
+    subgraph Gateway["API Gateway :8080"]
+        AUTH_F[AuthGlobalFilter]
+        ROUTE[路由转发]
+    end
+
+    subgraph Services["KBA 微服务"]
+        S1[identity :8101]
+        S2[knowledge :8102]
+        S3[ai-application :8103]
+        S4[operations :8104]
+        S5[notification :8105]
+        S6[file :8106]
+    end
+
+    subgraph DifyStack["Dify AI 引擎"]
+        DAPI[dify-api :5001]
+        DWEB[dify-web 控制台]
+        CELERY[Celery Worker]
+    end
+
+    AD & CL & PT --> Gateway
+    AUTH_F --> ROUTE
+    ROUTE -->|/api/v1/auth/**| S1
+    ROUTE -->|/api/v1/knowledge/**| S2
+    ROUTE -->|/api/v1/chat/** /assistants/**| S3
+    ROUTE -->|/api/v1/audit/** /monitor/**| S4
+    S3 -->|POST /v1/chat-messages| DAPI
+    S2 -->|Dataset / 检索 API| DAPI
+    DAPI --> CELERY
+      </div>
+
+      <h3>6.2 网关路由规则（代码依据）</h3>
+      <p>配置于 <span class="path">kba-gateway/src/main/resources/application-dev.yml</span>：</p>
+      <table>
+        <thead><tr><th>路径前缀</th><th>目标服务</th><th>职责</th></tr></thead>
+        <tbody>
+          <tr><td><code>/api/v1/auth/**</code></td><td>identity :8101</td><td>登录、用户、角色</td></tr>
+          <tr><td><code>/api/v1/knowledge/**</code></td><td>knowledge :8102</td><td>知识库、文档、检索</td></tr>
+          <tr><td><code>/api/v1/chat/**</code></td><td>ai-application :8103</td><td>对话、助手、会话</td></tr>
+          <tr><td><code>/api/v1/audit/**</code></td><td>operations :8106</td><td>审计、监控、配置</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ========== 7. Dify RAG ========== -->
+    <section id="rag">
+      <h2>七、Dify RAG 架构与流程（核心）</h2>
+      <p>Dify RAG 源码集中在 <span class="path">code/opensource/dify/api/core/rag/</span>，由两条主线构成：<strong>IndexingRunner（离线）</strong>与 <strong>DatasetRetrieval / RetrievalService（在线）</strong>。</p>
+
+      <h3>7.1 离线索引流水线</h3>
+      <div class="mermaid">
+flowchart TD
+    UP[用户上传文档] --> DS_CREATE[创建 DatasetDocument]
+    DS_CREATE --> CELERY[Celery: document_indexing_task]
+    CELERY --> IR[IndexingRunner.run]
+
+    IR --> EX[_extract 文档抽取]
+    EX --> EP[ExtractProcessor<br/>PDF/Word/HTML/URL]
+    EX --> TR[_transform 切分清洗]
+    TR --> IP[IndexProcessorFactory<br/>paragraph / QA / parent-child]
+    TR --> LS[_load_segments 写入 DocumentSegment]
+    LS --> LD[_load 向量化入库]
+    LD --> VDB[(Qdrant 向量索引)]
+    LD --> KW[关键词倒排索引]
+    LD --> DONE[status: completed]
+      </div>
+
+      <p>核心类 <span class="path">core/indexing_runner.py</span> 编排 ETL 三阶段：</p>
+      <div class="code-file">dify/api/tasks/document_indexing_task.py — Celery 触发索引</div>
+      <pre><code>@shared_task(queue="dataset")
+def document_indexing_task(dataset_id: str, document_ids: list):
+    ...
+    document.indexing_status = "parsing"
+    indexing_runner = IndexingRunner()
+    indexing_runner.run(documents)   # 核心：进入 ETL</code></pre>
+
+      <div class="code-file">dify/api/core/indexing_runner.py — ETL 主流程</div>
+      <pre><code>def run(self, dataset_documents):
+    index_processor = IndexProcessorFactory(index_type).init_index_processor()
+    text_docs = self._extract(index_processor, requeried_document, processing_rule.to_dict())
+    documents = self._transform(index_processor, dataset, text_docs, ...)
+    self._load_segments(dataset, requeried_document, documents)  # 写 PostgreSQL segments
+    self._load(index_processor, dataset, requeried_document, documents)  # Embedding + 向量库</code></pre>
+
+      <div class="code-file">dify/api/core/rag/extractor/extract_processor.py — 按类型选解析器</div>
+      <pre><code>class ExtractProcessor:
+    # PDF → PdfExtractor(pypdfium2)
+    # Word → WordExtractor / UnstructuredWordExtractor
+    # HTML → HtmlExtractor(beautifulsoup4)
+    # URL  → FirecrawlWebExtractor / JinaReaderWebExtractor
+    def extract(extract_setting, is_automatic): ...</code></pre>
+
+      <div class="code-file">dify/api/core/rag/datasource/vdb/vector_factory.py — 向量写入</div>
+      <pre><code>batch_embeddings = self._embeddings.embed_documents([doc.page_content for doc in batch])
+self._vector_processor.create(texts=batch, embeddings=batch_embeddings)
+# _embeddings = CacheEmbedding(ModelManager 获取的 Embedding 模型)</code></pre>
+
+      <h3>7.2 在线检索流水线</h3>
+      <div class="mermaid">
+flowchart TD
+    Q[用户 Query] --> DR[DatasetRetrieval.retrieve]
+    DR --> STRAT{retrieve_strategy}
+
+    STRAT -->|SINGLE| SR[single_retrieve<br/>LLM 路由选库]
+    STRAT -->|MULTIPLE| MR[multiple_retrieve<br/>并行多库检索]
+
+    SR & MR --> RS[RetrievalService.retrieve]
+    RS --> M{RetrievalMethod}
+
+    M -->|SEMANTIC| EMB[Embedding 向量检索]
+    M -->|FULL_TEXT| FT[全文检索]
+    M -->|HYBRID| HY[并行语义+全文]
+    M -->|KEYWORD| KW[关键词检索 jieba]
+
+    HY --> DEDUP[去重]
+    DEDUP --> RERANK[DataPostProcessor<br/>Rerank / 加权融合]
+    RERANK --> CTX[DocumentContext 上下文构建]
+    CTX --> LLM[LLM 生成 + 引用 citation]
+      </div>
+
+      <div class="code-file">dify/api/core/rag/retrieval/dataset_retrieval.py — 多库路由入口</div>
+      <pre><code>def retrieve(self, app_id, user_id, tenant_id, model_config, config, query, ...):
+    dataset_ids = config.dataset_ids
+    retrieve_config = config.retrieve_config
+    # 元数据过滤
+    metadata_filter_document_ids, metadata_condition = self.get_metadata_filter_condition(...)
+    if retrieve_config.retrieve_strategy == RetrieveStrategy.SINGLE:
+        all_documents = self.single_retrieve(...)      # LLM 选一个库
+    elif retrieve_config.retrieve_strategy == RetrieveStrategy.MULTIPLE:
+        all_documents = self.multiple_retrieve(...)    # 并行查多库
+    # 组装 DocumentContext + RetrievalSourceMetadata 供 Prompt 引用</code></pre>
+
+      <div class="code-file">dify/api/core/rag/datasource/retrieval_service.py — 混合检索 + 重排</div>
+      <pre><code>with ThreadPoolExecutor(max_workers=RETRIEVAL_SERVICE_EXECUTORS) as executor:
+    futures.append(executor.submit(self._retrieve, ...))  # 语义/全文并行
+
+if retrieval_method == RetrievalMethod.HYBRID_SEARCH:
+    all_documents_item = self._deduplicate_documents(all_documents_item)
+    data_post_processor = DataPostProcessor(tenant_id, reranking_mode, reranking_model, weights)
+    all_documents_item = data_post_processor.invoke(query=query, documents=all_documents_item, top_n=top_k)</code></pre>
+
+      <div class="code-file">dify/api/core/rag/data_post_processor/data_post_processor.py — 后处理</div>
+      <pre><code>def invoke(self, query, documents, score_threshold, top_n):
+    if self.rerank_runner:
+        documents = self.rerank_runner.run(query, documents, ...)  # Cross-Encoder 或加权
+    if self.reorder_runner:
+        documents = self.reorder_runner.run(documents)             # 相邻块重排
+    return documents</code></pre>
+
+      <h3>7.3 检索模式对照</h3>
+      <table>
+        <thead><tr><th>模式</th><th>枚举</th><th>适用场景</th></tr></thead>
+        <tbody>
+          <tr><td>语义检索</td><td>SEMANTIC_SEARCH</td><td>自然语言问句、语义相似</td></tr>
+          <tr><td>全文检索</td><td>FULL_TEXT_SEARCH</td><td>精确关键词、专有名词</td></tr>
+          <tr><td>混合检索</td><td>HYBRID_SEARCH</td><td>兼顾语义与关键词，默认推荐</td></tr>
+          <tr><td>关键词检索</td><td>KEYWORD_SEARCH</td><td>轻量场景、jieba 分词</td></tr>
+        </tbody>
+      </table>
+
+      <h3>7.4 索引结构类型</h3>
+      <table>
+        <thead><tr><th>类型</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>paragraph</td><td>通用段落切分，最常用</td></tr>
+          <tr><td>QA</td><td>问答对索引，适合 FAQ</td></tr>
+          <tr><td>parent-child</td><td>父块存全文、子块做向量召回，检索时拼回父上下文</td></tr>
+        </tbody>
+      </table>
+
+      <!-- ===== RAG 功能代码详解 ===== -->
+      <h3 id="rag-detail">7.5 RAG 功能代码详解（按执行顺序）</h3>
+      <p>以下按 Dify 源码真实调用链展开，每个子功能只保留<strong>理解逻辑所需的最小代码</strong>。根目录：<span class="path">dify/api/core/rag/</span> + <span class="path">core/indexing_runner.py</span>。</p>
+
+      <div class="mermaid">
+stateDiagram-v2
+    [*] --> waiting: 上传文档
+    waiting --> parsing: Celery 任务启动
+    parsing --> splitting: _extract 完成
+    splitting --> indexing: _transform 切分完成
+    indexing --> completed: _load 向量/关键词写入
+    parsing --> error: 异常
+    splitting --> error
+    indexing --> error
+      </div>
+
+      <h4>7.5.1 任务入口：Celery 触发索引</h4>
+      <div class="code-file">tasks/document_indexing_task.py</div>
+      <pre><code># Phase 1: 状态 → parsing
+document.indexing_status = "parsing"
+document.processing_started_at = naive_utc_now()
+
+# Phase 2: 执行索引（IndexingRunner 内部自建 DB Session）
+indexing_runner = IndexingRunner()
+indexing_runner.run(documents)
+
+# 成功后 indexing_status → completed，记录 tokens / indexing_latency</code></pre>
+
+      <h4>7.5.2 阶段一 Extract：多数据源文档抽取</h4>
+      <p><code>IndexingRunner._extract</code> 按 <code>data_source_type</code> 分支，调用对应 <code>IndexProcessor.extract</code>：</p>
+      <div class="code-file">core/indexing_runner.py — _extract</div>
+      <pre><code>match dataset_document.data_source_type:
+    case "upload_file":
+        extract_setting = ExtractSetting(datasource_type=FILE, upload_file=file_detail, ...)
+        text_docs = index_processor.extract(extract_setting, process_rule_mode=process_rule["mode"])
+    case "notion_import":
+        extract_setting = ExtractSetting(datasource_type=NOTION, notion_info=...)
+    case "website_crawl":
+        extract_setting = ExtractSetting(datasource_type=WEBSITE, website_info=...)
+# 状态更新为 splitting；metadata 写入 document_id / dataset_id</code></pre>
+
+      <div class="code-file">core/rag/extractor/extract_processor.py — 按扩展名选解析器</div>
+      <pre><code>if file_extension == ".pdf":
+    extractor = PdfExtractor(...)           # pypdfium2
+elif file_extension == ".docx":
+    extractor = WordExtractor(...)          # python-docx
+elif file_extension in {".htm", ".html"}:
+    extractor = HtmlExtractor(...)          # beautifulsoup4
+elif file_extension in {".ppt", ".pptx"}:
+    extractor = UnstructuredPPTXExtractor(...) # unstructured 库
+# WEBSITE: FirecrawlWebExtractor / WaterCrawlWebExtractor / JinaReaderWebExtractor
+return extractor.extract()  # → list[Document(page_content, metadata)]</code></pre>
+
+      <h4>7.5.3 阶段二 Transform：清洗 + 切分</h4>
+      <div class="code-file">core/rag/cleaner/clean_processor.py — 预处理规则</div>
+      <pre><code>def clean(text, process_rule):
+    text = re.sub(r"[\x00-\x08...]", "", text)   # 去除控制字符
+    for rule in pre_processing_rules:
+        if rule["id"] == "remove_extra_spaces" and rule["enabled"]:
+            text = re.sub(r"\n{3,}", "\n\n", text)   # 合并多余空行
+        if rule["id"] == "remove_urls_emails" and rule["enabled"]:
+            text = re.sub(email_pattern, "", text)   # 去邮箱/URL</code></pre>
+
+      <div class="code-file">core/rag/index_processor/processor/paragraph_index_processor.py — 段落切分</div>
+      <pre><code>def transform(self, documents, current_user=None, **kwargs):
+    rules = Rule.model_validate(process_rule.get("rules"))
+    splitter = self._get_splitter(
+        max_tokens=rules.segmentation.max_tokens,      # 默认 500~1000
+        chunk_overlap=rules.segmentation.chunk_overlap, # 重叠窗口
+        separator=rules.segmentation.separator,         # 分隔符 \n\n
+        embedding_model_instance=kwargs.get("embedding_model_instance"),
+    )
+    for document in documents:
+        document.page_content = CleanProcessor.clean(document.page_content, process_rule)
+        document_nodes = splitter.split_documents([document])  # RecursiveCharacterTextSplitter
+        for node in document_nodes:
+            node.metadata["doc_id"] = str(uuid.uuid4())
+            node.metadata["doc_hash"] = helper.generate_text_hash(node.page_content)</code></pre>
+
+      <div class="code-file">core/rag/index_processor/index_processor_factory.py — 三种索引结构</div>
+      <pre><code>if index_type == PARAGRAPH_INDEX:   return ParagraphIndexProcessor()
+elif index_type == QA_INDEX:          return QAIndexProcessor()       # 额外 LLM 抽问答对
+elif index_type == PARENT_CHILD_INDEX: return ParentChildIndexProcessor()  # 父子块</code></pre>
+
+      <p><strong>QA 索引</strong>在切分后还会用 LLM 把段落转为 Q/A 对（<code>QAIndexProcessor.transform</code>），向量检索时匹配 question，回答时带 answer。</p>
+
+      <h4>7.5.4 阶段三 Load Segments：写入 PostgreSQL</h4>
+      <div class="code-file">core/indexing_runner.py — _load_segments</div>
+      <pre><code>def _load_segments(self, dataset, dataset_document, documents):
+    doc_store = DatasetDocumentStore(dataset, user_id, document_id)
+    doc_store.add_documents(
+        docs=documents,
+        save_child=(doc_form == PARENT_CHILD_INDEX)  # 父块+子块都入库
+    )
+# 表 document_segment: content, index_node_id, tokens, status=indexing</code></pre>
+
+      <h4>7.5.5 阶段四 Load：向量索引 vs 经济模式</h4>
+      <p>由 Dataset 的 <code>indexing_technique</code> 决定：</p>
+      <table>
+        <thead><tr><th>模式</th><th>值</th><th>行为</th></tr></thead>
+        <tbody>
+          <tr><td>高质量</td><td><code>high_quality</code></td><td>Embedding 模型向量化 → Qdrant/Weaviate；可选全文索引</td></tr>
+          <tr><td>经济</td><td><code>economy</code></td><td>仅 jieba 关键词倒排，不调 Embedding API</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-file">core/indexing_runner.py — _load</div>
+      <pre><code>if indexing_technique == "economy":
+    # 独立线程建关键词索引
+    create_keyword_thread = threading.Thread(target=self._process_keyword_index, ...)
+    create_keyword_thread.start()
+
+if indexing_technique == "high_quality":
+    # 10 线程池按 hash 分组写入，避免死锁
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        for chunk_documents in document_groups:
+            executor.submit(self._process_chunk, index_processor, chunk_documents, ...)
+            # _process_chunk 内: index_processor.load() → Vector.create() → embed + VDB</code></pre>
+
+      <div class="code-file">core/rag/datasource/vdb/vector_factory.py — 向量写入</div>
+      <pre><code>def create(self, texts, **kwargs):
+    for i in range(0, len(texts), batch_size=1000):
+        batch_embeddings = self._embeddings.embed_documents([doc.page_content for doc in batch])
+        self._vector_processor.create(texts=batch, embeddings=batch_embeddings)
+# search 时: query_vector = embed_query(query) → vector_processor.search_by_vector()</code></pre>
+
+      <h4>7.5.6 Embedding：带缓存的向量化</h4>
+      <div class="code-file">core/rag/embedding/cached_embedding.py</div>
+      <pre><code>def embed_documents(self, texts):
+    for i, text in enumerate(texts):
+        hash = helper.generate_text_hash(text)
+        cached = db.session.query(Embedding).filter_by(model_name=..., hash=hash).first()
+        if cached:
+            text_embeddings[i] = cached.get_embedding()   # 命中 DB 缓存
+        else:
+            embedding_queue_indices.append(i)             # 待调 API
+    # 未命中批次调用 model_instance.invoke_text_embedding(texts=batch)
+    normalized = vector / np.linalg.norm(vector)        # L2 归一化后存库</code></pre>
+
+      <h4>7.5.7 关键词索引：jieba 倒排表</h4>
+      <div class="code-file">core/rag/datasource/keyword/jieba/jieba.py</div>
+      <pre><code>def create(self, texts, **kwargs):
+    with redis_client.lock(f"keyword_indexing_lock_{dataset.id}"):
+        for text in texts:
+            keywords = JiebaKeywordTableHandler().extract_keywords(text.page_content, keyword_number)
+            keyword_table = self._add_text_to_keyword_table(keyword_table, doc_id, keywords)
+        self._save_dataset_keyword_table(keyword_table)  # 存 PostgreSQL / 对象存储
+
+def search(self, query, top_k):
+    keywords = handler.extract_keywords(query, ...)
+    # 按关键词命中 doc_id 集合，取交集/并集排序</code></pre>
+
+      <h4>7.5.8 在线检索入口：DatasetRetrieval</h4>
+      <div class="mermaid">
+flowchart TD
+    Q[query] --> META[元数据过滤 get_metadata_filter_condition]
+    META --> STRAT{retrieve_strategy}
+    STRAT -->|SINGLE| SR[single_retrieve LLM 选库]
+    STRAT -->|MULTIPLE| MR[multiple_retrieve 多线程并行]
+    SR & MR --> RS[RetrievalService per dataset]
+    RS --> FMT[format_retrieval_documents]
+    FMT --> CTX[DocumentContext 列表]
+    CTX --> PROMPT[注入 LLM Prompt + citation]
+      </div>
+
+      <div class="code-file">core/rag/retrieval/dataset_retrieval.py — 策略分支</div>
+      <pre><code>metadata_filter_document_ids, metadata_condition = self.get_metadata_filter_condition(...)
+
+if retrieve_config.retrieve_strategy == SINGLE:
+    all_documents = self.single_retrieve(...)    # 见 7.5.9
+elif retrieve_config.retrieve_strategy == MULTIPLE:
+    all_documents = self.multiple_retrieve(...)  # 见 7.5.10
+
+# 格式化引用
+for record in RetrievalService.format_retrieval_documents(dify_documents):
+    if segment.answer:  # QA 索引
+        content = f"question:{segment.content} answer:{segment.answer}"
+    document_context_list.append(DocumentContext(content=content, score=record.score))
+    retrieval_resource_list.append(RetrievalSourceMetadata(...))  # 前端展示来源</code></pre>
+
+      <h4>7.5.9 多库路由：single_retrieve</h4>
+      <p>当应用绑定多个 Dataset 且策略为 SINGLE 时，先用 LLM 选一个库再检索：</p>
+      <div class="code-file">core/rag/retrieval/dataset_retrieval.py — single_retrieve</div>
+      <pre><code>tools = [PromptMessageTool(name=dataset.id, description=dataset.description) for dataset in available_datasets]
+
+if planning_strategy == REACT_ROUTER:
+    dataset_id, _ = ReactMultiDatasetRouter().invoke(query, tools, model_config, ...)
+elif planning_strategy == ROUTER:
+    dataset_id, _ = FunctionCallMultiDatasetRouter().invoke(query, tools, ...)
+
+# 选中 dataset 后调用 RetrievalService.retrieve(retrieval_method, dataset_id, query, top_k, ...)</code></pre>
+
+      <h4>7.5.10 多库并行：multiple_retrieve</h4>
+      <div class="code-file">core/rag/retrieval/dataset_retrieval.py — multiple_retrieve</div>
+      <pre><code>dataset_count = len(available_datasets)
+for dataset in available_datasets:
+    thread = threading.Thread(target=self._retriever, args=(dataset, query, top_k, ...))
+    thread.start()
+    all_threads.append(thread)
+for thread in all_threads:
+    thread.join()
+# 合并 all_documents 后，若 reranking_enable → DataPostProcessor 跨库重排</code></pre>
+
+      <h4>7.5.11 单库检索：RetrievalService 四模式</h4>
+      <div class="code-file">core/rag/retrieval/retrieval_methods.py</div>
+      <pre><code>class RetrievalMethod(StrEnum):
+    SEMANTIC_SEARCH = "semantic_search"
+    FULL_TEXT_SEARCH = "full_text_search"
+    HYBRID_SEARCH = "hybrid_search"
+    KEYWORD_SEARCH = "keyword_search"</code></pre>
+
+      <div class="code-file">core/rag/datasource/retrieval_service.py — _retrieve 并行调度</div>
+      <pre><code>with ThreadPoolExecutor(max_workers=RETRIEVAL_SERVICE_EXECUTORS) as executor:
+    if retrieval_method == KEYWORD_SEARCH:
+        futures.append(executor.submit(self.keyword_search, ...))      # jieba 倒排
+    if is_support_semantic_search(retrieval_method):
+        futures.append(executor.submit(self.embedding_search, ...))      # 向量相似度
+    if is_support_fulltext_search(retrieval_method):
+        futures.append(executor.submit(self.full_text_index_search, ...)) # 全文索引
+
+# HYBRID 完成后:
+if retrieval_method == HYBRID_SEARCH:
+    all_documents_item = self._deduplicate_documents(all_documents_item)
+    all_documents_item = DataPostProcessor(...).invoke(query, all_documents_item, top_n=top_k)</code></pre>
+
+      <div class="code-file">embedding_search — 语义检索核心</div>
+      <pre><code>vector = Vector(dataset=dataset)
+documents = vector.search_by_vector(
+    query,
+    search_type="similarity_score_threshold",
+    top_k=top_k,
+    score_threshold=score_threshold,
+    filter={"group_id": [dataset.id]},
+    document_ids_filter=document_ids_filter,  # 元数据过滤后的 doc 范围
+)</code></pre>
+
+      <h4>7.5.12 重排序 Rerank</h4>
+      <div class="code-file">core/rag/rerank/rerank_factory.py</div>
+      <pre><code>match runner_type:
+    case RERANKING_MODEL:  return RerankModelRunner(rerank_model_instance)  # Cohere/BGE 等
+    case WEIGHTED_SCORE:    return WeightRerankRunner(weights)               # 向量分+关键词分加权</code></pre>
+
+      <div class="code-file">core/rag/rerank/rerank_model.py — Cross-Encoder 重排</div>
+      <pre><code>def run(self, query, documents, score_threshold, top_n):
+    rerank_result = self.rerank_model_instance.invoke_rerank(
+        query=query, docs=[doc.page_content for doc in documents], top_n=top_n
+    )
+    for result in rerank_result.docs:
+        if result.score >= score_threshold:
+            rerank_documents.append(Document(page_content=result.text, metadata=..., score=result.score))</code></pre>
+
+      <h4>7.5.13 检索结果 → LLM Prompt</h4>
+      <p>检索完成后，<code>DocumentContext</code> 列表被拼入系统 Prompt（带 <code>&lt;context&gt;</code> 标签），同时 <code>RetrievalSourceMetadata</code> 通过 SSE 事件 <code>retriever_resources</code> 返回前端展示引用来源。</p>
+
+      <h4>7.5.14 功能模块与文件对照（速记）</h4>
+      <table>
+        <thead><tr><th>功能</th><th>核心类/函数</th><th>文件</th></tr></thead>
+        <tbody>
+          <tr><td>异步任务</td><td><code>document_indexing_task</code></td><td><code>tasks/document_indexing_task.py</code></td></tr>
+          <tr><td>ETL 编排</td><td><code>IndexingRunner.run</code></td><td><code>core/indexing_runner.py</code></td></tr>
+          <tr><td>文档解析</td><td><code>ExtractProcessor.extract</code></td><td><code>core/rag/extractor/extract_processor.py</code></td></tr>
+          <tr><td>文本清洗</td><td><code>CleanProcessor.clean</code></td><td><code>core/rag/cleaner/clean_processor.py</code></td></tr>
+          <tr><td>段落切分</td><td><code>ParagraphIndexProcessor.transform</code></td><td><code>index_processor/processor/paragraph_index_processor.py</code></td></tr>
+          <tr><td>QA 切分</td><td><code>QAIndexProcessor.transform</code></td><td><code>index_processor/processor/qa_index_processor.py</code></td></tr>
+          <tr><td>Segment 落库</td><td><code>DatasetDocumentStore.add_documents</code></td><td><code>core/rag/docstore/dataset_docstore.py</code></td></tr>
+          <tr><td>向量写入</td><td><code>Vector.create</code></td><td><code>core/rag/datasource/vdb/vector_factory.py</code></td></tr>
+          <tr><td>Embedding 缓存</td><td><code>CacheEmbedding.embed_documents</code></td><td><code>core/rag/embedding/cached_embedding.py</code></td></tr>
+          <tr><td>关键词索引</td><td><code>Jieba.create / search</code></td><td><code>core/rag/datasource/keyword/jieba/jieba.py</code></td></tr>
+          <tr><td>检索编排</td><td><code>DatasetRetrieval.retrieve</code></td><td><code>core/rag/retrieval/dataset_retrieval.py</code></td></tr>
+          <tr><td>检索执行</td><td><code>RetrievalService.retrieve / _retrieve</code></td><td><code>core/rag/datasource/retrieval_service.py</code></td></tr>
+          <tr><td>重排序</td><td><code>DataPostProcessor.invoke</code></td><td><code>core/rag/data_post_processor/data_post_processor.py</code></td></tr>
+          <tr><td>多库路由</td><td><code>ReactMultiDatasetRouter</code></td><td><code>core/rag/retrieval/router/multi_dataset_react_route.py</code></td></tr>
+        </tbody>
+      </table>
+
+      <div class="card memory">
+        <h4>RAG 代码记忆链（离线 → 在线）</h4>
+        <p style="margin:0;font-size:0.95rem">
+          <strong>离线</strong>：Celery → IndexingRunner → Extract(多格式解析) → Clean → Split(分段) → Segment入库 → Embed+Vector / jieba关键词<br />
+          <strong>在线</strong>：DatasetRetrieval(SINGLE/MULTIPLE路由) → RetrievalService(语义/全文/混合/关键词) → DataPostProcessor(Rerank) → DocumentContext → LLM
+        </p>
+      </div>
+    </section>
+
+    <!-- ========== 8. Dify Agent ========== -->
+    <section id="agent">
+      <h2>八、Dify Agent 架构与流程</h2>
+
+      <h3>8.1 Agent 与普通 Chatbot 的区别</h3>
+      <table>
+        <thead><tr><th>维度</th><th>Chatbot + RAG</th><th>Agent</th></tr></thead>
+        <tbody>
+          <tr><td>检索方式</td><td>每次 Query 自动检索 Dataset</td><td>LLM 自主决定是否调用知识库 Tool</td></tr>
+          <tr><td>工具能力</td><td>仅知识库</td><td>知识库 + 网络搜索 + API + 代码 + MCP 插件</td></tr>
+          <tr><td>推理模式</td><td>单轮检索 → 生成</td><td>ReACT 多轮：思考 → 行动 → 观察 → 再思考</td></tr>
+          <tr><td>适用场景</td><td>标准 FAQ / 文档问答</td><td>复杂任务、多步推理、跨源查证</td></tr>
+        </tbody>
+      </table>
+
+      <h3>8.2 Agent 执行流程</h3>
+      <div class="mermaid">
+sequenceDiagram
+    participant U as 用户
+    participant T as KBA ai-application
+    participant D as Dify API
+    participant A as Agent Runner
+    participant KB as Dataset Tool
+    participant LLM as 大模型
+
+    U->>T: POST /api/v1/chat (SSE)
+    T->>D: POST /v1/chat-messages (streaming)
+    D->>A: 启动 Agent 循环
+
+    loop ReACT 迭代
+        A->>LLM: 分析用户意图
+        LLM-->>A: 决定调用 dataset_retriever_tool
+        A->>KB: 检索知识库
+        KB-->>A: 返回相关片段
+        A->>LLM: 注入 Observation 继续推理
+    end
+
+    A-->>D: 最终 Answer + retriever_resources
+    D-->>T: SSE 流式 chunk
+    T-->>U: 转发流式响应 + 持久化消息
+      </div>
+
+      <p>Agent 知识库工具位于 <span class="path">core/tools/utils/dataset_retriever/dataset_retriever_tool.py</span>，内部复用 <code>DatasetRetrieval</code>。</p>
+
+      <div class="code-file">dify/api/core/agent/cot_agent_runner.py — ReACT 主循环</div>
+      <pre><code>while function_call_state and iteration_step &lt;= max_iteration_steps:
+    chunks = model_instance.invoke_llm(prompt_messages, tools=[], stream=True, ...)
+    react_chunks = CotAgentOutputParser.handle_react_stream_output(chunks, usage_dict)
+    for chunk in react_chunks:
+        if isinstance(chunk, AgentScratchpadUnit.Action):
+            scratchpad.action = chunk          # 解析出 Action
+        else:
+            scratchpad.thought += chunk        # 流式输出 Thought
+    if scratchpad.action.action_name.lower() == "final answer":
+        final_answer = ...                   # 结束
+    else:
+        tool_result = ToolEngine.agent_invoke(tool, ...)  # 执行工具 → Observation
+        function_call_state = True             # 继续下一轮
+    iteration_step += 1</code></pre>
+
+      <div class="code-file">dify/api/core/agent/fc_agent_runner.py — Function Calling 主循环</div>
+      <pre><code>while function_call_state and iteration_step &lt;= max_iteration_steps:
+    chunks = model_instance.invoke_llm(prompt_messages, tools=prompt_messages_tools, stream=True, ...)
+    for chunk in chunks:
+        if self.check_tool_calls(chunk):
+            function_call_state = True
+            tool_calls.extend(self.extract_tool_calls(chunk))
+    for tool_call_id, tool_call_name, tool_call_args in tool_calls:
+        tool_invoke_response, message_files = ToolEngine.agent_invoke(
+            tool=tool_instances[tool_call_name], tool_parameters=tool_call_args, ...)
+        # 将 ToolPromptMessage(observation) 追加到 prompt_messages
+    iteration_step += 1</code></pre>
+
+      <div class="code-file">dify/api/core/tools/utils/dataset_retriever/dataset_retriever_tool.py — 知识库 Tool</div>
+      <pre><code>class DatasetRetrieverTool(DatasetRetrieverBaseTool):
+    def _run(self, query: str) -> str:
+        dataset_retrieval = DatasetRetrieval()
+        documents = RetrievalService.retrieve(
+            retrieval_method=..., dataset_id=self.dataset_id, query=query, top_k=...)
+        # 返回格式化文本片段，作为 Agent 的 Observation</code></pre>
+
+      <div class="code-file">dify/api/core/tools/tool_engine.py — 统一工具调度</div>
+      <pre><code>class ToolEngine:
+    @staticmethod
+    def agent_invoke(tool, tool_parameters, user_id, ...):
+        # 校验参数 → tool.invoke() → 回调 hit_callback → 返回 ToolInvokeMessage</code></pre>
+
+      <h3>8.3 KBA 中的 Assistant 模型</h3>
+      <p>实体 <span class="path">ai/domain/entity/Assistant.java</span> 映射企业侧助手配置：</p>
+      <ul>
+        <li><code>systemPrompt</code> — 系统提示词</li>
+        <li><code>knowledgeSpaceIds</code> — 绑定的知识空间（对应 Dify Dataset）</li>
+        <li><code>modelId</code> — 模型路由</li>
+        <li>会话通过 <code>AssistantSessionServiceImpl</code> 调用 <code>DifyWebClient.chatStream</code></li>
+      </ul>
+    </section>
+
+    <!-- ========== 9. KBA 集成 ========== -->
+    <section id="kba">
+      <h2>九、KBA 与 Dify 集成（代码逻辑）</h2>
+
+      <h3>9.1 流式对话代理</h3>
+      <div class="code-file">kba-ai-application/.../DifyWebClient.java — 调用 Dify API</div>
+      <pre><code>public Flux&lt;String&gt; chatStream(String conversationId, String query, String user) {
+    body.put("query", query);
+    body.put("response_mode", "streaming");
+    body.put("conversation_id", conversationId != null ? conversationId : "");
+    body.put("user", user);
+    return getWebClient().post()
+        .uri("/v1/chat-messages")
+        .bodyValue(body)
+        .retrieve()
+        .bodyToFlux(String.class);   // 每个元素是一个 SSE JSON chunk
+}</code></pre>
+
+      <div class="code-file">kba-ai-application/.../ChatServiceImpl.java — 流式对话全链路</div>
+      <pre><code>public Flux&lt;String&gt; sendMessage(Long appId, Long sessionId, String content, boolean stream) {
+    messageRepository.save(userMessage);                    // ① 持久化用户消息
+    return difyWebClient.chatStream(session.getDifyConversationId(), content, user)
+        .doOnNext(chunk -> {
+            JsonNode node = objectMapper.readTree(chunk);
+            if (node.has("conversation_id"))
+                sessionRepository.updateDifyConversationId(...);  // ② 同步 Dify 会话 ID
+            if (node.has("answer"))
+                answerBuilder.append(node.get("answer").asText()); // ③ 拼接流式答案
+        })
+        .doOnComplete(() -> messageRepository.save(assistantMessage)); // ④ 流结束落库
+}</code></pre>
+
+      <div class="code-file">kba-ai-application/.../AssistantSessionServiceImpl.java — 助手会话（含 userId 校验）</div>
+      <pre><code>public Map createSession(Long assistantId, String title) {
+    session.setUserId(StpUtil.getLoginIdAsLong());  // 绑定当前登录用户
+    session.setTenantId(1L);
+    sessionRepository.save(session);
+}
+// sendMessage 同样走 difyWebClient.chatStream，逻辑与 ChatServiceImpl 一致</code></pre>
+
+      <h3>9.2 知识管理模块</h3>
+      <div class="mermaid">
+flowchart LR
+    subgraph KBA_Knowledge["kba-knowledge"]
+        KC[KnowledgeController]
+        DC[DocumentController]
+        SC[SearchController]
+        KS[KnowledgeServiceImpl]
+        DS[DocumentServiceImpl]
+        SS[SearchServiceImpl]
+    end
+
+    subgraph Storage["存储"]
+        MYSQL[(MySQL 元数据)]
+        MINIO[(MinIO 文件)]
+    end
+
+    subgraph Dify["Dify API"]
+        DSET[POST /v1/datasets]
+        DIDX[文档索引任务]
+        DRET[POST /v1/retrieval 或 hit-testing]
+    end
+
+    KC --> KS --> MYSQL
+    DC --> DS --> MINIO
+    DS -->|同步触发| DIDX
+    SC --> SS --> DRET
+      </div>
+
+      <p>企业侧保留文档元数据与生命周期，检索委托 Dify（或过渡期 WeKnora）。</p>
+
+      <div class="code-file">kba-knowledge/.../DocumentServiceImpl.java — 文档上传</div>
+      <pre><code>public Map upload(Long knowledgeId, MultipartFile file) {
+    file.transferTo(filePath);                    // 存本地/MinIO
+    document.setKnowledgeId(knowledgeId);
+    document.setStatus("pending");                // 待索引
+    document.setChunkCount(0);
+    documentMapper.insert(document);              // 写 MySQL 元数据
+    // 后续同步触发 Dify document_indexing_task
+}</code></pre>
+
+      <div class="code-file">kba-knowledge/.../SearchServiceImpl.java — 检索 API</div>
+      <pre><code>public List search(String query, Long knowledgeId, int topK) {
+    request.put("query", query);
+    request.put("top_k", topK);
+    request.put("dataset_id", knowledgeId.toString());
+    Map result = weknoraApiClient.retrieve(request);  // 调检索引擎
+    return extractSearchResults(result);              // 解析 records → content/score
+}</code></pre>
+
+      <div class="code-file">kba-knowledge/.../Knowledge.java — 知识空间实体</div>
+      <pre><code>@TableName("kb_knowledge_space")
+public class Knowledge {
+    private Long id;
+    private String name;
+    private Long tenantId;      // 租户隔离
+    private Long createdBy;
+}</code></pre>
+
+      <h3>9.3 前端模块对照</h3>
+      <table>
+        <thead><tr><th>端</th><th>路由</th><th>功能</th></tr></thead>
+        <tbody>
+          <tr><td>管理端 admin-web</td><td>/knowledge/*</td><td>知识接入、加工、检索配置</td></tr>
+          <tr><td>管理端</td><td>/dify/app</td><td>Dify 应用管理</td></tr>
+          <tr><td>管理端</td><td>/governance/*</td><td>权限、审计</td></tr>
+          <tr><td>用户端 client-web</td><td>/search</td><td>知识检索</td></tr>
+          <tr><td>用户端</td><td>/chat/:id</td><td>AI 流式对话</td></tr>
+          <tr><td>用户端</td><td>/assistants</td><td>AI 助手列表</td></tr>
+          <tr><td>用户端</td><td>/report/*</td><td>报告编辑 + 知识回写</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ========== 10. 业务流程 ========== -->
+    <section id="flows">
+      <h2>十、端到端业务流程</h2>
+
+      <h3>10.1 知识入库流程</h3>
+      <div class="mermaid">
+sequenceDiagram
+    participant Admin as 管理员
+    participant FE as admin-web
+    participant KN as knowledge-service
+    participant FS as MinIO
+    participant DB as MySQL
+    participant Dify as Dify API
+    participant CW as Celery Worker
+    participant QD as Qdrant
+
+    Admin->>FE: 上传 PDF/Word
+    FE->>KN: POST /api/v1/documents/upload
+    KN->>FS: 存储原始文件
+    KN->>DB: 写入 document (status=pending)
+    KN->>Dify: 同步 Dataset 文档
+    Dify->>CW: document_indexing_task
+    CW->>CW: IndexingRunner ETL
+    CW->>QD: 写入向量
+    CW->>DB: 更新 status=completed
+      </div>
+      <p class="path">代码走读：F2 Step 1-3 → <a href="#walkthrough" style="color:#7aa2ff">第十一章</a></p>
+
+      <h3>10.2 RAG 问答流程</h3>
+      <div class="mermaid">
+sequenceDiagram
+    participant User as 用户
+    participant FE as client-web
+    participant AI as ai-application
+    participant Dify as Dify API
+    participant RAG as DatasetRetrieval
+    participant LLM as LLM
+
+    User->>FE: 输入问题
+    FE->>AI: POST /api/v1/chat (stream=true)
+    AI->>AI: 保存 user message
+    AI->>Dify: POST /v1/chat-messages (streaming)
+    Dify->>RAG: retrieve(query, dataset_ids)
+    RAG->>RAG: 混合检索 + Rerank
+    RAG-->>Dify: DocumentContext + citations
+    Dify->>LLM: Prompt + 检索上下文
+    LLM-->>Dify: 流式 token
+    Dify-->>AI: SSE chunks
+    AI->>AI: 持久化 assistant message
+    AI-->>FE: 转发 SSE
+    FE-->>User: 逐字显示 + 引用来源
+      </div>
+      <p class="path">代码走读：F3 + F5 → <a href="#walkthrough" style="color:#7aa2ff">第十一章</a>；Dify 检索见第七章</p>
+
+      <h3>10.3 Agent 多工具调用流程</h3>
+      <div class="mermaid">
+flowchart TD
+    Q[复杂用户问题] --> AG[Agent Runner]
+    AG --> T1{需要查知识库?}
+    T1 -->|是| KB[dataset_retriever_tool]
+    T1 -->|否| T2{需要联网?}
+    KB --> OBS1[Observation: 文档片段]
+    T2 -->|是| WEB[webscraper / search tool]
+    T2 -->|否| T3{需要调 API?}
+    WEB --> OBS2[Observation: 网页内容]
+    T3 -->|是| API[HTTP Request Tool]
+    OBS1 & OBS2 --> AG
+    AG --> ANS[综合生成最终答案]
+      </div>
+      <p class="path">代码走读：F4 → <a href="#walkthrough" style="color:#7aa2ff">第十一章</a>；Agent 源码见第八章</p>
+    </section>
+
+    <!-- ========== 11. 代码走读 ========== -->
+    <section id="walkthrough">
+      <h2>十一、核心流程与功能代码走读</h2>
+      <p>按<strong>调用顺序</strong>串联关键代码，每段只保留理解流程所需的最小片段。完整路径见第十三章速查表。</p>
+
+      <!-- F1 -->
+      <h3>F1 · 用户登录与网关鉴权</h3>
+      <div class="mermaid">
+sequenceDiagram
+    participant FE as admin-web
+    participant GW as Gateway
+    participant ID as identity-service
+    participant RD as Redis
+
+    FE->>GW: POST /api/v1/auth/login
+    GW->>ID: 白名单放行
+    ID->>ID: BCrypt 校验 + StpUtil.login
+    ID->>RD: 写入 Token 会话
+    ID-->>FE: Bearer token
+    FE->>GW: 业务 API + Authorization
+    GW->>GW: SaReactorFilter.checkLogin
+    GW->>GW: AuthGlobalFilter 注入 X-User-Id
+      </div>
+
+      <div class="flow-step"><strong>Step 1</strong> identity 校验密码并签发 Token</div>
+      <div class="code-file">kba-identity/.../AuthServiceImpl.java</div>
+      <pre><code>SysUser user = userRepository.findByUsername(request.getUsername())...
+if (!passwordEncoder.matches(request.getPassword(), user.getPassword()))
+    throw new BusinessException(401, "用户名或密码错误");
+StpUtil.login(user.getId());
+return LoginResponse.builder().token(StpUtil.getTokenValue()).expiresIn(86400L).build();</code></pre>
+
+      <div class="flow-step"><strong>Step 2</strong> 网关拦截未登录请求（非白名单）</div>
+      <div class="code-file">kba-gateway/.../SaTokenGatewayConfig.java</div>
+      <pre><code>return new SaReactorFilter()
+    .addExclude("/api/v1/auth/login", "/api/v1/auth/register", ...)
+    .setAuth(obj -> SaRouter.match("/**", r -> StpUtil.checkLogin()))
+    .setError(e -> SaResult.get(401, e.getMessage(), null));</code></pre>
+
+      <div class="flow-step"><strong>Step 3</strong> 解析 Token，向下游注入用户上下文</div>
+      <div class="code-file">kba-gateway/.../AuthGlobalFilter.java</div>
+      <pre><code>Object loginId = StpUtil.getLoginIdDefaultNull();
+ServerHttpRequest mutated = request.mutate()
+    .header("X-User-Id", loginId.toString())
+    .header("X-Tenant-Id", StpUtil.getSession().getString("tenantId"))
+    .build();</code></pre>
+
+      <div class="flow-step"><strong>Step 4</strong> 前端路由守卫 + 权限判断</div>
+      <div class="code-file">frontend/admin-web/src/router/index.ts</div>
+      <pre><code>if (!token) next(`/login?redirect=...`);
+await userStore.initUserState();  // 拉 userInfo + permissions
+if (to.meta.permission && !userStore.hasPermission(to.meta.permission))
+    next('/403');</code></pre>
+
+      <!-- F2 -->
+      <h3>F2 · 知识文档入库与向量索引</h3>
+      <p>14 个子步骤详见 <a href="#rag-detail" style="color:#7aa2ff">§7.5</a>（Extract → Clean → Split → Segment → Vector/jieba）。</p>
+      <div class="flow-step"><strong>Step 1</strong> KBA 接收上传，写元数据</div>
+      <div class="code-file">kba-knowledge/.../DocumentServiceImpl.java</div>
+      <pre><code>document.setStatus("pending");
+document.setFilePath(filePath.toString());
+documentMapper.insert(document);</code></pre>
+
+      <div class="flow-step"><strong>Step 2</strong> Dify Celery 异步任务更新状态并执行索引</div>
+      <div class="code-file">dify/api/tasks/document_indexing_task.py</div>
+      <pre><code>document.indexing_status = "parsing"
+indexing_runner = IndexingRunner()
+indexing_runner.run(documents)</code></pre>
+
+      <div class="flow-step"><strong>Step 3</strong> IndexingRunner：抽取 → 切分 → 入库</div>
+      <div class="code-file">dify/api/core/indexing_runner.py</div>
+      <pre><code>text_docs = self._extract(...)       # ExtractProcessor: PDF/Word/HTML...
+documents = self._transform(...)     # TextSplitter 按 token/字符切分
+self._load_segments(...)             # INSERT document_segment (PostgreSQL)
+self._load(...)                      # embed_documents → Qdrant + jieba 关键词索引</code></pre>
+
+      <!-- F3 -->
+      <h3>F3 · RAG 问答（Chatbot 模式）</h3>
+      <p>完整 RAG 离线/在线细节见 <a href="#rag-detail" style="color:#7aa2ff">§7.5 RAG 功能代码详解</a>。</p>
+      <div class="flow-step"><strong>Step 1</strong> KBA 代理请求到 Dify（见 F5 Step 1-2）</div>
+      <div class="flow-step"><strong>Step 2</strong> Dify 根据应用绑定的 dataset_ids 检索</div>
+      <div class="code-file">dify/api/core/rag/retrieval/dataset_retrieval.py</div>
+      <pre><code>if retrieve_config.retrieve_strategy == SINGLE:
+    all_documents = self.single_retrieve(...)    # LLM 选一个 Dataset
+else:
+    all_documents = self.multiple_retrieve(...)  # 多库并行
+# → 构建 document_context_list 注入 LLM Prompt</code></pre>
+
+      <div class="flow-step"><strong>Step 3</strong> 单库内执行向量/混合检索</div>
+      <div class="code-file">dify/api/core/rag/datasource/retrieval_service.py</div>
+      <pre><code>query_vector = embeddings.embed_query(query)
+results = vector.search_by_vector(query_vector, top_k=top_k)
+# HYBRID 时 ThreadPoolExecutor 并行 full_text + semantic → DataPostProcessor.invoke</code></pre>
+
+      <div class="flow-step"><strong>Step 4</strong> 格式化引用并注入 Prompt</div>
+      <div class="code-file">dify/api/core/rag/retrieval/dataset_retrieval.py — 构建上下文</div>
+      <pre><code>for record in RetrievalService.format_retrieval_documents(dify_documents):
+    content = f"question:{segment.content} answer:{segment.answer}" if segment.answer else segment.content
+    document_context_list.append(DocumentContext(content=content, score=record.score))
+    retrieval_resource_list.append(RetrievalSourceMetadata(dataset_id=..., document_name=..., score=...))</code></pre>
+      <div class="flow-step"><strong>Step 5</strong> LLM 带引用生成，SSE 返回 answer + retriever_resources</div>
+
+      <!-- F4 -->
+      <h3>F4 · Agent 多轮工具调用</h3>
+      <div class="flow-step"><strong>Step 1</strong> 同 F3，请求进入 Dify；若 app.agent_mode.strategy = react → CotAgentRunner</div>
+      <div class="code-file">dify/api/core/agent/cot_agent_runner.py</div>
+      <pre><code>while iteration_step &lt;= max_iteration_steps:
+    chunks = model_instance.invoke_llm(..., stream=True)
+    # CotAgentOutputParser 解析 Thought / Action / Action Input
+    if action_name != "Final Answer":
+        observation = ToolEngine.agent_invoke(tool, action_input)  # 调知识库/搜索/API
+        prompt_messages.append(ToolPromptMessage(content=observation))
+        iteration_step += 1; continue
+    final_answer = action_input; break</code></pre>
+
+      <div class="flow-step"><strong>Step 2</strong> 若 strategy = function_call → FunctionCallAgentRunner，由模型原生 tool_calls 驱动</div>
+      <div class="code-file">dify/api/core/agent/fc_agent_runner.py</div>
+      <pre><code>chunks = model_instance.invoke_llm(..., tools=prompt_messages_tools)
+if self.check_tool_calls(chunk):
+    function_call_state = True
+    tool_calls = self.extract_tool_calls(chunk)
+# 逐个 ToolEngine.agent_invoke → 追加 ToolPromptMessage → 下一轮 LLM</code></pre>
+
+      <!-- F5 -->
+      <h3>F5 · KBA 流式对话端到端</h3>
+      <div class="mermaid">
+sequenceDiagram
+    participant FE as client-web
+    participant GW as Gateway
+    participant AI as ai-application
+    participant Dify as dify-api
+
+    FE->>GW: POST /api/v1/chat (SSE)
+    GW->>AI: 鉴权 + X-User-Id
+    AI->>AI: INSERT chat_message (USER)
+    AI->>Dify: POST /v1/chat-messages streaming
+    loop SSE chunks
+        Dify-->>AI: {"event":"message","answer":"..."}
+        AI-->>FE: 转发 chunk
+    end
+    AI->>AI: INSERT chat_message (ASSISTANT)
+      </div>
+
+      <div class="code-file">kba-ai-application/.../ChatServiceImpl.java — 完整调用链</div>
+      <pre><code>// Controller → ChatServiceImpl.sendMessage(appId, sessionId, content, stream=true)
+messageRepository.save(userMessage);
+return difyWebClient.chatStream(session.getDifyConversationId(), content, user)
+    .doOnNext(chunk -> { /* 解析 conversation_id + answer */ })
+    .doOnComplete(() -> messageRepository.save(assistantMessage));</code></pre>
+
+      <!-- F6 -->
+      <h3>F6 · 角色权限分配</h3>
+      <div class="code-file">kba-identity/.../RoleController.java + RoleRepositoryImpl.java</div>
+      <pre><code>@PutMapping("/{id}/permissions")
+public void updatePermissions(@PathVariable Long id, @RequestBody List&lt;Long&gt; permissionIds) {
+    roleRepository.assignPermissions(id, permissionIds);
+}
+// assignPermissions: DELETE sys_role_permission WHERE role_id=? → 批量 INSERT 新关联</code></pre>
+
+      <div class="code-file">docker/mysql/init/03-mock-data.sql — 权限码示例</div>
+      <pre><code>INSERT INTO sys_permission (code, resource, action) VALUES
+('knowledge:document:upload', '/api/v1/knowledge/documents/upload', 'POST'),
+('ai:app:create', '/api/v1/ai/apps', 'POST');
+-- KNOWLEDGE_ADMIN 角色绑定 knowledge:* 权限</code></pre>
+
+      <div class="card memory">
+        <h4>代码走读记忆链</h4>
+        <p><strong>登录</strong> AuthServiceImpl → SaReactorFilter → AuthGlobalFilter → router.hasPermission<br />
+        <strong>入库</strong> DocumentServiceImpl → document_indexing_task → IndexingRunner.run<br />
+        <strong>RAG</strong> DatasetRetrieval.retrieve → RetrievalService → DataPostProcessor → LLM<br />
+        <strong>Agent</strong> CotAgentRunner/FCAgentRunner → ToolEngine → DatasetRetrieverTool<br />
+        <strong>对话</strong> ChatServiceImpl → DifyWebClient.chatStream → SSE 落库</p>
+      </div>
+    </section>
+
+    <!-- ========== 12. 权限系统 ========== -->
+    <section id="auth">
+      <h2>十二、权限系统详细设计</h2>
+
+      <div class="card highlight">
+        <p>KBA 权限体系采用 <strong>RBAC（角色访问控制）为主、ABAC（属性访问控制）为辅、多租户隔离为底</strong> 的三层模型。认证统一由 <strong>Sa-Token + Redis</strong> 管理会话，网关层校验登录态并向下游注入用户上下文；授权在菜单/API/数据三个维度分层控制，关键操作写入审计日志。</p>
+        <p><strong>记忆口诀：</strong>「认证 Gateway+Sa-Token · 授权 RBAC 角色权限 · 隔离 tenant_id · 审计 AuditLog」</p>
+      </div>
+
+      <h3>12.1 权限模型总览</h3>
+      <div class="mermaid">
+flowchart TB
+    subgraph AuthN["认证 Authentication"]
+        LOGIN[用户名密码登录]
+        SSO[Keycloak OIDC SSO]
+        LOGIN & SSO --> SAT[Sa-Token 签发 Token]
+        SAT --> REDIS[(Redis 会话)]
+    end
+
+    subgraph AuthZ["授权 Authorization"]
+        USER[用户 sys_user]
+        UR[用户-角色 sys_user_role]
+        ROLE[角色 sys_role]
+        RP[角色-权限 sys_role_permission]
+        PERM[权限 sys_permission]
+        MENU[菜单 sys_menu]
+
+        USER --> UR --> ROLE --> RP --> PERM
+        ROLE -.-> MENU
+    end
+
+    subgraph DataAuth["数据权限 Data Scope"]
+        TENANT[tenant_id 租户隔离]
+        DEPT[dept_id 部门归属]
+        SEC[密级 ABAC security_level]
+        OWNER[created_by 资源属主]
+    end
+
+    AuthN --> AuthZ
+    AuthZ --> DataAuth
+      </div>
+
+      <h3>12.2 四层授权链（对齐设计文档）</h3>
+      <table>
+        <thead><tr><th>层级</th><th>含义</th><th>实现载体</th><th>示例</th></tr></thead>
+        <tbody>
+          <tr><td>① 用户 User</td><td>身份主体，绑定租户与部门</td><td><code>sys_user</code></td><td>zhangsan @ tenant_id=1</td></tr>
+          <tr><td>② 角色 Role</td><td>职能分组，可多个</td><td><code>sys_role</code> + <code>sys_user_role</code></td><td>KNOWLEDGE_ADMIN、AI_ADMIN</td></tr>
+          <tr><td>③ 资源 Resource</td><td>被保护的对象</td><td>API 路径 / 菜单 / 知识空间</td><td><code>/api/v1/knowledge/**</code></td></tr>
+          <tr><td>④ 操作 Action</td><td>对资源的动作</td><td><code>sys_permission.action</code></td><td>GET / POST / DELETE / *</td></tr>
+        </tbody>
+      </table>
+
+      <h3>12.3 数据模型（ER 关系）</h3>
+      <div class="mermaid">
+erDiagram
+    sys_tenant ||--o{ sys_user : contains
+    sys_tenant ||--o{ sys_role : contains
+    sys_user ||--o{ sys_user_role : has
+    sys_role ||--o{ sys_user_role : assigned
+    sys_role ||--o{ sys_role_permission : grants
+    sys_permission ||--o{ sys_role_permission : linked
+    sys_dept ||--o{ sys_user : belongs
+    sys_user ||--o{ audit_log : triggers
+
+    sys_user {
+        bigint id PK
+        bigint tenant_id
+        bigint dept_id
+        string username
+        string password_hash
+        tinyint status
+    }
+    sys_role {
+        bigint id PK
+        bigint tenant_id
+        string code
+        string name
+    }
+    sys_permission {
+        bigint id PK
+        string code UK
+        string resource
+        string action
+    }
+    sys_user_role {
+        bigint user_id FK
+        bigint role_id FK
+    }
+    sys_role_permission {
+        bigint role_id FK
+        bigint permission_id FK
+    }
+      </div>
+
+      <p>核心表定义见 <span class="path">docker/mysql/init/01-init.sql</span>（<code>kba_identity</code> 库），Mock 角色与权限见 <span class="path">03-mock-data.sql</span>。</p>
+
+      <h3>12.4 预置角色与权限矩阵</h3>
+      <table>
+        <thead><tr><th>角色 code</th><th>名称</th><th>典型权限</th></tr></thead>
+        <tbody>
+          <tr><td><code>SUPER_ADMIN</code></td><td>超级管理员</td><td>全部 sys_permission（<code>SELECT 1, id FROM sys_permission</code>）</td></tr>
+          <tr><td><code>ADMIN</code></td><td>管理员</td><td>用户/角色/系统配置</td></tr>
+          <tr><td><code>USER</code></td><td>普通用户</td><td>基础查看与对话</td></tr>
+          <tr><td><code>KNOWLEDGE_ADMIN</code></td><td>知识管理员</td><td>knowledge:space:manage、document:upload/delete/view</td></tr>
+          <tr><td><code>AI_ADMIN</code></td><td>AI 应用管理员</td><td>ai:model:config、ai:app:create/delete、ai:chat:manage</td></tr>
+          <tr><td><code>OPERATOR</code></td><td>运营人员</td><td>document:view、data:statistics:view、data:export</td></tr>
+          <tr><td><code>GUEST</code></td><td>访客</td><td>仅 knowledge:document:view</td></tr>
+          <tr><td><code>DATA_ANALYST</code></td><td>数据分析师</td><td>document:view、statistics、export</td></tr>
+        </tbody>
+      </table>
+
+      <h3>12.5 权限编码规范</h3>
+      <p>权限 <code>code</code> 采用 <strong>域:资源:动作</strong> 三段式，与 API 路径解耦但可映射：</p>
+      <table>
+        <thead><tr><th>code</th><th>resource</th><th>action</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>knowledge:document:upload</code></td><td>/api/v1/knowledge/documents/upload</td><td>POST</td><td>上传文档</td></tr>
+          <tr><td><code>knowledge:document:delete</code></td><td>/api/v1/knowledge/documents/*</td><td>DELETE</td><td>删除文档</td></tr>
+          <tr><td><code>ai:app:create</code></td><td>/api/v1/ai/apps</td><td>POST</td><td>创建 AI 应用</td></tr>
+          <tr><td><code>system:audit:view</code></td><td>/api/v1/system/audit/**</td><td>GET</td><td>查看审计日志</td></tr>
+          <tr><td><code>knowledge:manage</code></td><td>/api/v1/knowledge/**</td><td>*</td><td>知识模块通配</td></tr>
+        </tbody>
+      </table>
+
+      <h3>12.6 认证流程（双通道）</h3>
+      <div class="mermaid">
+sequenceDiagram
+    participant FE as 前端 admin-web
+    participant GW as Gateway
+    participant ID as identity-service
+    participant KC as Keycloak
+    participant RD as Redis
+
+    alt 通道 A：用户名密码
+        FE->>GW: POST /api/v1/auth/login
+        GW->>ID: 转发（白名单免鉴权）
+        ID->>ID: BCrypt 校验 password_hash
+        ID->>ID: StpUtil.login(userId)
+        ID->>RD: 写入 Sa-Token 会话
+        ID-->>FE: Bearer token + UserInfo
+    else 通道 B：Keycloak SSO
+        FE->>KC: OAuth2 Authorization Code
+        KC-->>FE: redirect + code
+        FE->>KC: POST /token (code 换 token)
+        KC-->>FE: access_token + refresh_token
+        FE->>FE: userStore.setToken
+        FE->>GW: 带 Bearer 访问业务 API
+    end
+      </div>
+
+      <p>本地登录核心代码 <span class="path">identity/.../AuthServiceImpl.java</span>：</p>
+      <pre><code>StpUtil.login(user.getId());
+String token = StpUtil.getTokenValue();
+// 返回 LoginResponse: token, tokenType=Bearer, expiresIn=86400</code></pre>
+
+      <p>Keycloak 回调见 <span class="path">frontend/admin-web/src/views/login/oauth-callback.vue</span>，路由白名单包含 <code>/login/oauth2/code/keycloak</code>。</p>
+
+      <h3>12.7 网关鉴权与上下文透传</h3>
+      <p>请求经过网关时经过<strong>两道过滤</strong>：</p>
+      <table>
+        <thead><tr><th>组件</th><th>文件</th><th>职责</th></tr></thead>
+        <tbody>
+          <tr><td>SaReactorFilter</td><td><code>SaTokenGatewayConfig.java</code></td><td>全局 <code>StpUtil.checkLogin()</code>，未登录返回 401</td></tr>
+          <tr><td>AuthGlobalFilter</td><td><code>AuthGlobalFilter.java</code></td><td>解析 Token，注入 <code>X-User-Id</code>、<code>X-Tenant-Id</code> 请求头</td></tr>
+          <tr><td>白名单</td><td><code>GatewayAuthConstants.java</code></td><td><code>/api/v1/auth/login</code>、register、captcha、actuator</td></tr>
+        </tbody>
+      </table>
+
+      <div class="mermaid">
+flowchart LR
+    REQ[HTTP 请求] --> WHITE{白名单?}
+    WHITE -->|是| FWD[直接转发下游]
+    WHITE -->|否| CHECK{Sa-Token 已登录?}
+    CHECK -->|否| E401[401 Unauthorized]
+    CHECK -->|是| INJECT[注入 X-User-Id / X-Tenant-Id]
+    INJECT --> SVC[微服务处理]
+      </div>
+
+      <pre><code>// AuthGlobalFilter — 向下游注入上下文
+.mutate()
+    .header(Constants.USER_ID_HEADER, loginId.toString())
+    .header(Constants.TENANT_ID_HEADER, resolveTenantId())
+    .build();</code></pre>
+
+      <p>Sa-Token 全局配置（<span class="path">gateway/application.yml</span>）：Token 名 <code>Authorization</code>，前缀 <code>Bearer</code>，超时 86400s，会话存 Redis，支持多端并发登录。</p>
+
+      <h3>12.8 微服务内二次校验与数据级权限</h3>
+      <p>各业务微服务通过 <code>SaInterceptor</code> 再次校验登录态（如 identity 的 <span class="path">SaTokenConfig.java</span>）。业务层通过 <code>StpUtil.getLoginIdAsLong()</code> 实现<strong>数据归属校验</strong>：</p>
+      <table>
+        <thead><tr><th>场景</th><th>代码位置</th><th>规则</th></tr></thead>
+        <tbody>
+          <tr><td>助手会话隔离</td><td><code>AssistantSessionServiceImpl</code></td><td>session.userId 必须等于当前登录用户</td></tr>
+          <tr><td>收藏隔离</td><td><code>FavoriteServiceImpl</code></td><td>按 userId 过滤收藏记录</td></tr>
+          <tr><td>待办隔离</td><td><code>UserTodoServiceImpl</code></td><td>按 userId 读写个人待办</td></tr>
+          <tr><td>报告作者</td><td><code>ReportController</code></td><td>authorId = StpUtil.getLoginIdAsLong()</td></tr>
+          <tr><td>知识空间</td><td><code>Knowledge.tenantId</code></td><td>租户级逻辑隔离</td></tr>
+          <tr><td>审计日志</td><td><code>AuditLog.tenantId</code></td><td>按租户归档操作记录</td></tr>
+        </tbody>
+      </table>
+
+      <h3>12.9 前端权限控制</h3>
+      <div class="mermaid">
+flowchart TD
+    NAV[路由跳转] --> TOKEN{Token 有效?}
+    TOKEN -->|否| LOGIN[跳转 /login]
+    TOKEN -->|是| REFRESH{即将过期?}
+    REFRESH -->|是| RT[refreshAccessToken]
+    REFRESH -->|否| INIT[initUserState]
+    INIT --> FETCH[拉取 userInfo + menus + permissions]
+    FETCH --> META{路由 meta.permission?}
+    META -->|有| HP[hasPermission 检查]
+    META -->|roles| HR[hasAnyRole 检查]
+    HP & HR -->|通过| PAGE[渲染页面]
+    HP & HR -->|拒绝| E403[跳转 /403]
+      </div>
+
+      <p>Pinia <span class="path">stores/user.ts</span> 提供三类守卫函数：</p>
+      <pre><code>function hasPermission(permission: string): boolean {
+  if (permissions.value.includes('*')) return true  // 超级权限
+  return permissions.value.includes(permission)
+}
+function hasRole(role: string): boolean
+function hasAnyRole(checkRoles: string[]): boolean</code></pre>
+
+      <p>管理端「治理与安全 → 权限配置」页面（<span class="path">governance/permission/index.vue</span>）支持按角色勾选功能树 + 密级（公开/内部/机密/绝密），对应设计文档中的 ABAC 扩展。</p>
+
+      <h3>12.10 ABAC 密级控制（属性维度）</h3>
+      <table>
+        <thead><tr><th>密级 id</th><th>名称</th><th>可见范围</th></tr></thead>
+        <tbody>
+          <tr><td><code>public</code></td><td>公开</td><td>所有登录用户</td></tr>
+          <tr><td><code>internal</code></td><td>内部</td><td>本租户内部员工</td></tr>
+          <tr><td><code>confidential</code></td><td>机密</td><td>需显式授权的角色</td></tr>
+          <tr><td><code>secret</code></td><td>绝密</td><td>高管 / 超级管理员</td></tr>
+        </tbody>
+      </table>
+      <p>检索与问答时，知识空间/文档携带密级属性，与用户的 role + securityLevel 组合过滤（设计目标：RAG 召回前先过权限网关，避免越权检索）。</p>
+
+      <h3>12.11 审计日志</h3>
+      <p>Operations 服务 <code>audit_log</code> 表记录关键操作，字段包括 module、action、resourceType、userId、ip、requestUrl、responseStatus、duration、tenantId。</p>
+      <div class="mermaid">
+flowchart LR
+    API[业务 API 调用] --> ASPECT[审计切面 / 手动记录]
+    ASPECT --> LOG[AuditLog 实体]
+    LOG --> DB[(kba_ops.audit_log)]
+    DB --> UI[管理端 治理-审计日志]
+      </div>
+      <p>管理端路由 <code>/governance/audit</code>，API 前缀 <code>/api/v1/audit/**</code> → operations-service。</p>
+
+      <h3>12.12 多租户隔离策略</h3>
+      <table>
+        <thead><tr><th>隔离层</th><th>机制</th></tr></thead>
+        <tbody>
+          <tr><td>身份数据</td><td><code>sys_user.tenant_id</code>、<code>sys_role.tenant_id</code>，唯一键 <code>uk_tenant_username</code></td></tr>
+          <tr><td>业务数据</td><td>Knowledge、Assistant、AuditLog 等均含 tenantId 字段</td></tr>
+          <tr><td>请求上下文</td><td>Gateway 注入 <code>X-Tenant-Id</code>，默认 fallback 为 <code>1</code></td></tr>
+          <tr><td>向量 / 文件</td><td>Dify tenant_id 隔离 + MinIO 路径按租户划分（设计）</td></tr>
+        </tbody>
+      </table>
+
+      <h3>12.13 权限管理 API</h3>
+      <table>
+        <thead><tr><th>接口</th><th>服务</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /api/v1/auth/login</code></td><td>identity</td><td>登录，返回 Token</td></tr>
+          <tr><td><code>POST /api/v1/auth/logout</code></td><td>identity</td><td>登出，销毁会话</td></tr>
+          <tr><td><code>POST /api/v1/auth/refresh</code></td><td>identity</td><td>刷新 Token</td></tr>
+          <tr><td><code>GET /api/v1/auth/user-info</code></td><td>identity</td><td>当前用户信息</td></tr>
+          <tr><td><code>GET /api/v1/roles</code></td><td>identity</td><td>角色列表</td></tr>
+          <tr><td><code>PUT /api/v1/roles/{id}/permissions</code></td><td>identity</td><td>为角色分配权限 ID 列表</td></tr>
+          <tr><td><code>GET /permissions/tree</code></td><td>前端 API</td><td>权限树（治理页面）</td></tr>
+        </tbody>
+      </table>
+
+      <p>角色权限分配逻辑 <span class="path">RoleRepositoryImpl.assignPermissions</span>：先删旧关联，再批量插入 <code>sys_role_permission</code>。</p>
+
+      <div class="resume-box">
+        <h4>简历话术 — 权限系统</h4>
+        <ul>
+          <li>设计并实现 RBAC + 多租户权限模型：用户-角色-权限三表关联，权限码映射 API 资源与操作</li>
+          <li>基于 Sa-Token + Spring Cloud Gateway 实现统一认证：网关全局 checkLogin、Token 透传、X-User-Id/X-Tenant-Id 上下文注入</li>
+          <li>集成 Keycloak OIDC 实现 SSO 单点登录，支持 Authorization Code 换 Token 与前端自动刷新</li>
+          <li>前端 Vue Router 守卫 + Pinia hasPermission/hasRole 实现菜单级与按钮级权限控制</li>
+          <li>业务层 StpUtil 数据归属校验（会话/收藏/报告），Operations 服务审计日志全链路留痕</li>
+        </ul>
+      </div>
+
+      <div class="card memory">
+        <h4>权限面试速答</h4>
+        <p><strong>认证</strong>：Sa-Token 签发 Bearer Token，Redis 存会话，Gateway SaReactorFilter 拦截。<br />
+        <strong>授权</strong>：RBAC 角色绑权限码，前端路由守卫 + 后端登录态；数据级用 tenant_id + userId 过滤。<br />
+        <strong>SSO</strong>：Keycloak OIDC，前端 code 换 token。<br />
+        <strong>审计</strong>：audit_log 记录 module/action/userId/ip/duration。</p>
+      </div>
+    </section>
+
+    <!-- ========== 13. 代码速查 ========== -->
+    <section id="code">
+      <h2>十三、核心代码路径速查</h2>
+      <table>
+        <thead><tr><th>模块</th><th>路径</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>Dify 索引入口</td><td><code>dify/api/core/indexing_runner.py</code></td><td>离线索引 ETL 编排</td></tr>
+          <tr><td>Dify 检索入口</td><td><code>dify/api/core/rag/retrieval/dataset_retrieval.py</code></td><td>在线多库检索路由</td></tr>
+          <tr><td>Dify 检索执行</td><td><code>dify/api/core/rag/datasource/retrieval_service.py</code></td><td>语义/全文/混合检索</td></tr>
+          <tr><td>Dify 索引任务</td><td><code>dify/api/tasks/document_indexing_task.py</code></td><td>Celery 异步任务</td></tr>
+          <tr><td>Dify Agent 工具</td><td><code>dify/api/core/tools/utils/dataset_retriever/</code></td><td>知识库 Tool</td></tr>
+          <tr><td>KBA 对话客户端</td><td><code>kba-ai-application/.../DifyWebClient.java</code></td><td>SSE 流式代理</td></tr>
+          <tr><td>KBA 对话服务</td><td><code>kba-ai-application/.../ChatServiceImpl.java</code></td><td>会话 + 消息持久化</td></tr>
+          <tr><td>KBA 助手会话</td><td><code>kba-ai-application/.../AssistantSessionServiceImpl.java</code></td><td>助手多轮对话</td></tr>
+          <tr><td>KBA 知识检索</td><td><code>kba-knowledge/.../SearchServiceImpl.java</code></td><td>检索 API</td></tr>
+          <tr><td>KBA 文档上传</td><td><code>kba-knowledge/.../DocumentServiceImpl.java</code></td><td>文件上传 + 元数据</td></tr>
+          <tr><td>KBA 网关</td><td><code>kba-gateway/.../application-dev.yml</code></td><td>路由 + Sa-Token</td></tr>
+          <tr><td>网关鉴权过滤器</td><td><code>kba-gateway/.../AuthGlobalFilter.java</code></td><td>Token 解析 + 上下文注入</td></tr>
+          <tr><td>网关 Sa-Token 配置</td><td><code>kba-gateway/.../SaTokenGatewayConfig.java</code></td><td>全局 checkLogin</td></tr>
+          <tr><td>认证白名单</td><td><code>kba-gateway/.../GatewayAuthConstants.java</code></td><td>login/register 免鉴权路径</td></tr>
+          <tr><td>登录服务</td><td><code>kba-identity/.../AuthServiceImpl.java</code></td><td>BCrypt + StpUtil.login</td></tr>
+          <tr><td>角色权限分配</td><td><code>kba-identity/.../RoleRepositoryImpl.java</code></td><td>sys_role_permission CRUD</td></tr>
+          <tr><td>权限实体</td><td><code>kba-identity/.../SysPermission.java</code></td><td>code/resource/action</td></tr>
+          <tr><td>审计日志</td><td><code>kba-operations/.../AuditLog.java</code></td><td>操作留痕</td></tr>
+          <tr><td>前端权限 Store</td><td><code>frontend/admin-web/src/stores/user.ts</code></td><td>hasPermission / hasRole</td></tr>
+          <tr><td>Keycloak 回调</td><td><code>frontend/admin-web/.../oauth-callback.vue</code></td><td>OIDC SSO</td></tr>
+          <tr><td>权限配置页</td><td><code>frontend/admin-web/.../governance/permission/index.vue</code></td><td>角色权限 + 密级</td></tr>
+          <tr><td>DB 初始化</td><td><code>docker/mysql/init/01-init.sql</code></td><td>RBAC 表结构 + 默认数据</td></tr>
+          <tr><td>管理端路由</td><td><code>frontend/admin-web/src/router/index.ts</code></td><td>菜单与权限守卫</td></tr>
+          <tr><td>用户端路由</td><td><code>frontend/client-web/src/router/index.ts</code></td><td>检索/对话/报告</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ========== 14. 面试记忆 ========== -->
+    <section id="qa">
+      <h2>十四、面试问答记忆卡</h2>
+
+      <div class="card">
+        <h4>Q1：你们的 RAG 是怎么做的？</h4>
+        <p>以 Dify 为 RAG 引擎。离线阶段通过 Celery 触发 IndexingRunner，完成文档抽取、切分、Embedding 写入 Qdrant；在线阶段用户提问时 DatasetRetrieval 根据应用绑定的 dataset_ids 执行混合检索，经 Rerank 后构建 DocumentContext 注入 LLM Prompt，返回答案和 citation 引用。KBA 负责企业门户和会话持久化，通过 WebClient 代理 Dify 流式 API。</p>
+      </div>
+
+      <div class="card">
+        <h4>Q2：Agent 和 Chatbot 有什么区别？</h4>
+        <p>Chatbot 模式每次自动做 RAG 检索；Agent 模式由 LLM 通过 ReACT 循环自主决定是否调用知识库 Tool、搜索 Tool 或 API Tool，适合多步推理。两者底层检索都走 DatasetRetrieval，Agent 多了工具编排层。</p>
+      </div>
+
+      <div class="card">
+        <h4>Q3：为什么不用 Dify 单独部署，还要 KBA？</h4>
+        <p>Dify 擅长 AI 能力，KBA 补企业级需求：Keycloak SSO、Sa-Token 网关鉴权、多租户知识空间、审计日志、统一门户 UI、业务元数据管理。本质是「Dify = AI 引擎，KBA = 企业外壳」。</p>
+      </div>
+
+      <div class="card">
+        <h4>Q4：流式对话怎么实现的？</h4>
+        <p>KBA 用 Spring WebClient 调 Dify <code>/v1/chat-messages</code>，<code>response_mode=streaming</code>，返回 Flux 逐 chunk 转发前端 SSE；同时解析 JSON 提取 conversation_id 和 answer 片段，流结束后完整持久化到 MySQL。</p>
+      </div>
+
+      <div class="card">
+        <h4>Q5：混合检索怎么工作？</h4>
+        <p>RetrievalService 用 ThreadPoolExecutor 并行执行 Embedding 语义检索和全文检索，结果去重后交给 DataPostProcessor，按 Rerank 模型或加权分数融合排序，取 top_k 构建上下文。</p>
+      </div>
+
+      <div class="card">
+        <h4>Q6：权限系统怎么设计的？</h4>
+        <p>RBAC 为主：用户通过 sys_user_role 关联多个角色，角色通过 sys_role_permission 关联权限码（如 knowledge:document:upload）。认证用 Sa-Token 签发 Bearer Token 存 Redis，Gateway 的 SaReactorFilter 全局 checkLogin，AuthGlobalFilter 向下游注入 X-User-Id 和 X-Tenant-Id。前端 Pinia 存 permissions 数组，路由守卫调 hasPermission。数据级用 tenant_id 租户隔离 + StpUtil.getLoginIdAsLong() 校验资源归属。SSO 走 Keycloak OIDC。关键操作写 audit_log。</p>
+      </div>
+
+      <div class="card">
+        <h4>Q7：Dify RAG 离线索引和在线检索分别经过哪些步骤？</h4>
+        <p><strong>离线</strong>：Celery <code>document_indexing_task</code> → <code>IndexingRunner.run</code> 四步：① <code>_extract</code>（ExtractProcessor 按 PDF/Word/HTML/URL 解析）② <code>_transform</code>（CleanProcessor 清洗 + TextSplitter 切分）③ <code>_load_segments</code>（写 PostgreSQL segment）④ <code>_load</code>（high_quality：CacheEmbedding + Vector→Qdrant；economy：jieba 关键词）。<strong>在线</strong>：<code>DatasetRetrieval.retrieve</code> 元数据过滤 + 多库路由 → <code>RetrievalService._retrieve</code> 并行语义/全文/混合 → <code>DataPostProcessor</code> Rerank → DocumentContext + citation 注入 LLM。详见 §7.5。</p>
+      </div>
+
+      <div class="card memory">
+        <h4>终极记忆公式</h4>
+        <p style="font-size:1.1rem;margin:0"><strong>入库 IndexingRunner · 检索 DatasetRetrieval · 生成 Dify App · 治理 KBA Java · 权限 RBAC+Tenant+Audit</strong></p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    KBA 简历向项目介绍 · 基于仓库源码梳理 · Dify RAG &amp; Agent 为核心<br />
+    源码路径：<code>code/backend</code> · <code>code/frontend</code> · <code>code/opensource/dify</code>
+  </footer>
+
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#151c28',
+        primaryTextColor: '#e8eef6',
+        primaryBorderColor: '#2a3648',
+        lineColor: '#7aa2ff',
+        secondaryColor: '#0b0f14',
+        tertiaryColor: '#1c2636'
+      },
+      flowchart: { curve: 'basis', htmlLabels: true },
+      sequence: { actorMargin: 50, messageMargin: 40 }
+    });
+  </script>
+</body>
+</html>
